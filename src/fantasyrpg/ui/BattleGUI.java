@@ -16,6 +16,7 @@ import java.io.IOException;
 
 public class BattleGUI extends JPanel {
     private BufferedImage bg, playerImg, bossImg, actionPanelImg, gameOverImg, victoryImg;
+    private BufferedImage arinWinImg, arinLoseImg; // Gambar tambahan untuk Arin
     private Player player;
     private Enemy currentEnemy;
 
@@ -76,9 +77,7 @@ public class BattleGUI extends JPanel {
                     resetGame();
                     return;
                 }
-
                 if (!canAction || isGameOver || showVictoryScreen) return;
-
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_1 -> executeAction(0);
                     case KeyEvent.VK_2 -> executeAction(1);
@@ -97,8 +96,11 @@ public class BattleGUI extends JPanel {
             actionPanelImg = ImageIO.read(new File("assets/actionpanel.png"));
             gameOverImg = ImageIO.read(new File("assets/game_over.png"));
             victoryImg = ImageIO.read(new File("assets/victory.png"));
+            // Load gambar Arin menang/kalah
+            arinWinImg = ImageIO.read(new File("assets/arin_win.png"));
+            arinLoseImg = ImageIO.read(new File("assets/arin_lose.png"));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Gagal memuat asset: " + e.getMessage());
         }
     }
 
@@ -247,8 +249,13 @@ public class BattleGUI extends JPanel {
 
         if (bg != null) g2d.drawImage(bg, 0, 0, getWidth(), getHeight(), null);
 
-        if (playerImg != null) {
-            g2d.drawImage(playerImg, 150 + playerOffsetX, 250, 200, 250, null);
+        // --- LOGIKA PERUBAHAN GAMBAR ARIN ---
+        BufferedImage arinToDraw = playerImg; // Default Arin
+        if (showVictoryScreen) arinToDraw = arinWinImg;
+        if (isGameOver) arinToDraw = arinLoseImg;
+
+        if (arinToDraw != null) {
+            g2d.drawImage(arinToDraw, 150 + playerOffsetX, 250, 200, 250, null);
             if (playerOverlay.getAlpha() > 0) {
                 g2d.setColor(playerOverlay);
                 g2d.fillOval(150, 250, 200, 250);
@@ -283,6 +290,7 @@ public class BattleGUI extends JPanel {
         g2d.drawString("Fireballs: " + fireballCount, 420, 470);
         g2d.drawString("Potions: " + player.getPotionCount(), 540, 470);
 
+        // --- LAYOVER GELAP DAN TULISAN VICTORY/DEFEAT ---
         if (isGameOver || showVictoryScreen) {
             g2d.setColor(new Color(0, 0, 0, 180));
             g2d.fillRect(0, 0, getWidth(), getHeight());
