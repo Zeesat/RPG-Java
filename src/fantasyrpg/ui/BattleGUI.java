@@ -1,9 +1,10 @@
 package fantasyrpg.ui;
 
-import fantasyrpg.entities.Player;
-import fantasyrpg.entities.Enemy;
 import fantasyrpg.entities.DragonBoss;
-import javax.swing.*;
+import fantasyrpg.entities.Enemy;
+import fantasyrpg.entities.Player;
+import fantasyrpg.services.BattleService;
+import fantasyrpg.services.RandomEventService;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -11,43 +12,45 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import javax.imageio.ImageIO;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Random;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class BattleGUI extends JPanel {
     private BufferedImage bg, playerImg, bossImg, actionPanelImg, gameOverImg, victoryImg;
     private BufferedImage arinWinImg, arinLoseImg; // Gambar tambahan untuk Arin
-    private Player player;
-    private Enemy currentEnemy;
 
+    private final Player player;
+    private final Enemy currentEnemy;
+    private final BattleService battleService;
+
+    private final Deque<String> battleLogs = new ArrayDeque<>();
+
+    private int round = 1;
     private int playerOffsetX = 0;
     private int bossOffsetX = 0;
     private int fireballX = -100;
-    private boolean showFireball = false;
-    private float bossOpacity = 1.0f;
-    private Color playerOverlay = new Color(0,0,0,0);
 
+    private boolean showFireball = false;
     private boolean canAction = true;
     private boolean isGameOver = false;
     private boolean showVictoryScreen = false;
-    private boolean isDefending = false;
 
-    private int fireballCount = 4;
-    private Timer autoAttackTimer;
+    private float bossOpacity = 1.0f;
+    private Color playerOverlay = new Color(0, 0, 0, 0);
 
     public BattleGUI(Player player, Enemy enemy) {
         this.player = player;
         this.currentEnemy = enemy;
-        this.setFocusable(true);
-        this.requestFocusInWindow();
-        loadAssets();
+        this.battleService = new BattleService(new RandomEventService(new Random()));
 
-        autoAttackTimer = new Timer(2500, e -> {
-            if (!isGameOver && !showVictoryScreen && currentEnemy.isAlive()) {
-                playBossAttack();
-            }
-        });
-        autoAttackTimer.start();
+        setFocusable(true);
+        requestFocusInWindow();
+        loadAssets();
+        beginRound();
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -55,16 +58,14 @@ public class BattleGUI extends JPanel {
                 int mx = e.getX();
                 int my = e.getY();
 
-                if (isGameOver) {
+                if (isGameOver || showVictoryScreen) {
                     if (mx >= 415 && mx <= 585 && my >= 420 && my <= 485) {
                         resetGame();
                     }
-                } else if (showVictoryScreen) {
-                    if (mx >= 415 && mx <= 585 && my >= 420 && my <= 485) {
-                        System.out.println("Victory! Rewards collected. Exiting game...");
-                        System.exit(0);
-                    }
-                } else if (canAction) {
+                    return;
+                }
+
+                if (canAction) {
                     handleActionClick(mx, my);
                 }
             }
@@ -73,65 +74,97 @@ public class BattleGUI extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (isGameOver && e.getKeyCode() == KeyEvent.VK_R) {
+                if ((isGameOver || showVictoryScreen) && e.getKeyCode() == KeyEvent.VK_R) {
                     resetGame();
                     return;
                 }
-                if (!canAction || isGameOver || showVictoryScreen) return;
+
+                if (!canAction || isGameOver || showVictoryScreen) {
+                    return;
+                }
+
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_1 -> executeAction(0);
                     case KeyEvent.VK_2 -> executeAction(1);
                     case KeyEvent.VK_3 -> executeAction(2);
-                    case KeyEvent.VK_4 -> executeAction(4);
+                    case KeyEvent.VK_4 -> executeAction(3);
+                    default -> {
+                    }
                 }
             }
         });
     }
 
     private void loadAssets() {
+        bg = loadImage("assets/background.png");
+        bossImg = loadImage("assets/boss.png");
+        actionPanelImg = loadImage("assets/actionpanel.png");
+        gameOverImg = loadImage("assets/game_over.png");
+        victoryImg = loadImage("assets/victory.png");
+
+        // Temporary debugging setup: all available characters use DragonBoss sprite.
+        playerImg = loadImage("assets/player.png");
+    }
+
+    private BufferedImage loadImage(String path) {
         try {
-            bg = ImageIO.read(new File("assets/background.png"));
-            playerImg = ImageIO.read(new File("assets/player.png"));
-            bossImg = ImageIO.read(new File("assets/boss.png"));
-            actionPanelImg = ImageIO.read(new File("assets/actionpanel.png"));
-            gameOverImg = ImageIO.read(new File("assets/game_over.png"));
-            victoryImg = ImageIO.read(new File("assets/victory.png"));
-            // Load gambar Arin menang/kalah
-            arinWinImg = ImageIO.read(new File("assets/arin_win.png"));
-            arinLoseImg = ImageIO.read(new File("assets/arin_lose.png"));
+            return ImageIO.read(new File(path));
         } catch (IOException e) {
             System.err.println("Gagal memuat asset: " + e.getMessage());
+            return null;
         }
     }
 
     private void resetGame() {
         player.setHp(player.getMaxHp());
         currentEnemy.setHp(currentEnemy.getMaxHp());
+
+        round = 1;
+        playerOffsetX = 0;
+        bossOffsetX = 0;
+        fireballX = -100;
+        showFireball = false;
+        bossOpacity = 1.0f;
+        playerOverlay = new Color(0, 0, 0, 0);
+        canAction = true;
         isGameOver = false;
         showVictoryScreen = false;
-        canAction = true;
-        isDefending = false;
-        bossOpacity = 1.0f;
-        fireballCount = 4;
-        autoAttackTimer.restart();
+
+        battleLogs.clear();
+        beginRound();
         repaint();
-        this.requestFocusInWindow();
+        requestFocusInWindow();
+    }
+
+    private void beginRound() {
+        String eventMessage = battleService.beginRound(player, currentEnemy);
+        addLog("Ronde " + round + ": " + eventMessage);
+        canAction = true;
     }
 
     private void executeAction(int section) {
-        if (section == 1 && fireballCount <= 0) return;
-        canAction = false;
-        switch (section) {
-            case 0 -> playPlayerAttack();
-            case 1 -> playFireballAnimation();
-            case 2 -> playDefendEffect();
-            case 3, 4 -> playPotionEffect();
+        BattleService.PlayerAction action = mapAction(section);
+        if (action == null) {
+            return;
         }
-        Timer cooldown = new Timer(1200, e -> {
-            if (!isGameOver && !showVictoryScreen) canAction = true;
-            ((Timer)e.getSource()).stop();
-        });
-        cooldown.start();
+
+        canAction = false;
+        switch (action) {
+            case ATTACK -> playPlayerAttack(() -> resolvePlayerAction(action));
+            case SKILL -> playFireballAnimation(() -> resolvePlayerAction(action));
+            case DEFEND -> playDefendEffect(() -> resolvePlayerAction(action));
+            case POTION -> playPotionEffect(() -> resolvePlayerAction(action));
+        }
+    }
+
+    private BattleService.PlayerAction mapAction(int section) {
+        return switch (section) {
+            case 0 -> BattleService.PlayerAction.ATTACK;
+            case 1 -> BattleService.PlayerAction.SKILL;
+            case 2 -> BattleService.PlayerAction.DEFEND;
+            case 3 -> BattleService.PlayerAction.POTION;
+            default -> null;
+        };
     }
 
     private void handleActionClick(int mx, int my) {
@@ -141,34 +174,77 @@ public class BattleGUI extends JPanel {
         }
     }
 
-    private void playPotionEffect() {
-        if (player.usePotion()) {
-            playerOverlay = new Color(0, 255, 0, 120);
-            repaint();
-            new Timer(600, e -> {
-                playerOverlay = new Color(0, 0, 0, 0);
-                ((Timer)e.getSource()).stop();
-            }).start();
+    private void resolvePlayerAction(BattleService.PlayerAction action) {
+        BattleService.ActionResult actionResult = battleService.executePlayerAction(player, currentEnemy, action);
+        addLog(actionResult.getMessage());
+
+        if (!currentEnemy.isAlive()) {
+            BattleService.ActionResult rewardResult = battleService.applyVictoryRewards(player, currentEnemy);
+            addLog(rewardResult.getMessage());
+            playDeathAnimation();
+            return;
         }
+
+        scheduleEnemyTurn();
     }
 
-    private void playDefendEffect() {
-        isDefending = true;
-        playerOverlay = new Color(255, 255, 0, 150);
+    private void scheduleEnemyTurn() {
+        Timer delay = new Timer(700, e -> {
+            ((Timer) e.getSource()).stop();
+            playBossAttack(this::resolveEnemyTurn);
+        });
+        delay.setRepeats(false);
+        delay.start();
+    }
+
+    private void resolveEnemyTurn() {
+        BattleService.ActionResult enemyResult = battleService.executeEnemyTurn(player, currentEnemy);
+        addLog(enemyResult.getMessage());
+
+        if (!player.isAlive()) {
+            isGameOver = true;
+            canAction = false;
+            repaint();
+            return;
+        }
+
+        round++;
+        beginRound();
         repaint();
-        Timer t = new Timer(1000, e -> {
+    }
+
+    private void playPotionEffect(Runnable onComplete) {
+        playerOverlay = new Color(0, 255, 0, 120);
+        repaint();
+
+        Timer t = new Timer(450, e -> {
             playerOverlay = new Color(0, 0, 0, 0);
-            isDefending = false;
-            ((Timer)e.getSource()).stop();
+            ((Timer) e.getSource()).stop();
+            onComplete.run();
             repaint();
         });
+        t.setRepeats(false);
         t.start();
     }
 
-    private void playFireballAnimation() {
-        fireballCount--;
+    private void playDefendEffect(Runnable onComplete) {
+        playerOverlay = new Color(255, 255, 0, 150);
+        repaint();
+
+        Timer t = new Timer(450, e -> {
+            playerOverlay = new Color(0, 0, 0, 0);
+            ((Timer) e.getSource()).stop();
+            onComplete.run();
+            repaint();
+        });
+        t.setRepeats(false);
+        t.start();
+    }
+
+    private void playFireballAnimation(Runnable onComplete) {
         showFireball = true;
         fireballX = 250;
+
         Timer t = new Timer(15, null);
         t.addActionListener(e -> {
             if (fireballX < 600) {
@@ -176,15 +252,14 @@ public class BattleGUI extends JPanel {
             } else {
                 showFireball = false;
                 t.stop();
-                currentEnemy.receiveDamage(player.getAttackPower() + 25);
-                checkBattleStatus();
+                onComplete.run();
             }
             repaint();
         });
         t.start();
     }
 
-    private void playPlayerAttack() {
+    private void playPlayerAttack(Runnable onComplete) {
         Timer t = new Timer(10, null);
         t.addActionListener(e -> {
             if (playerOffsetX < 100) {
@@ -192,15 +267,14 @@ public class BattleGUI extends JPanel {
             } else {
                 playerOffsetX = 0;
                 t.stop();
-                currentEnemy.receiveDamage(player.getAttackPower());
-                checkBattleStatus();
+                onComplete.run();
             }
             repaint();
         });
         t.start();
     }
 
-    private void playBossAttack() {
+    private void playBossAttack(Runnable onComplete) {
         Timer t = new Timer(20, null);
         t.addActionListener(e -> {
             if (bossOffsetX > -100) {
@@ -208,23 +282,11 @@ public class BattleGUI extends JPanel {
             } else {
                 bossOffsetX = 0;
                 t.stop();
-                int damageDealt = isDefending ? 0 : 25;
-                player.receiveDamage(damageDealt);
-                if (!player.isAlive()) {
-                    isGameOver = true;
-                    autoAttackTimer.stop();
-                }
+                onComplete.run();
             }
             repaint();
         });
         t.start();
-    }
-
-    private void checkBattleStatus() {
-        if (!currentEnemy.isAlive()) {
-            autoAttackTimer.stop();
-            playDeathAnimation();
-        }
     }
 
     private void playDeathAnimation() {
@@ -235,10 +297,18 @@ public class BattleGUI extends JPanel {
                 bossOpacity = 0;
                 t.stop();
                 showVictoryScreen = true;
+                canAction = false;
             }
             repaint();
         });
         t.start();
+    }
+
+    private void addLog(String message) {
+        battleLogs.addFirst(message);
+        while (battleLogs.size() > 4) {
+            battleLogs.removeLast();
+        }
     }
 
     @Override
@@ -247,7 +317,9 @@ public class BattleGUI extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        if (bg != null) g2d.drawImage(bg, 0, 0, getWidth(), getHeight(), null);
+        if (bg != null) {
+            g2d.drawImage(bg, 0, 0, getWidth(), getHeight(), null);
+        }
 
         // --- LOGIKA PERUBAHAN GAMBAR ARIN ---
         BufferedImage arinToDraw = playerImg; // Default Arin
@@ -258,7 +330,7 @@ public class BattleGUI extends JPanel {
             g2d.drawImage(arinToDraw, 150 + playerOffsetX, 250, 200, 250, null);
             if (playerOverlay.getAlpha() > 0) {
                 g2d.setColor(playerOverlay);
-                g2d.fillOval(150, 250, 200, 250);
+                g2d.fillOval(150, 250, 180, 220);
             }
         }
 
@@ -275,53 +347,103 @@ public class BattleGUI extends JPanel {
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
         }
 
+        drawActionPanel(g2d);
+        drawStatusBars(g2d);
+        drawBattleLog(g2d);
+
+        if (isGameOver || showVictoryScreen) {
+            drawEndOverlay(g2d);
+        }
+    }
+
+    private void drawActionPanel(Graphics2D g2d) {
         if (actionPanelImg != null) {
-            if (!canAction || (fireballCount <= 0)) {
-                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            if (!canAction) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.55f));
             }
             g2d.drawImage(actionPanelImg, 350, 480, 350, 100, null);
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        } else {
+            g2d.setColor(new Color(25, 25, 25, 200));
+            g2d.fillRoundRect(350, 480, 350, 100, 14, 14);
         }
 
-        drawStatusBars(g2d);
+        g2d.setColor(new Color(245, 245, 245));
+        g2d.setFont(new Font("Serif", Font.BOLD, 15));
 
-        g2d.setColor(new Color(200, 200, 200));
         g2d.setFont(new Font("Serif", Font.PLAIN, 16));
-        g2d.drawString("Fireballs: " + fireballCount, 420, 470);
-        g2d.drawString("Potions: " + player.getPotionCount(), 540, 470);
+        g2d.drawString("Potion: " + player.getPotionCount(), 370, 590);
+        g2d.drawString("Round: " + round, 500, 590);
+        g2d.drawString(canAction ? "Giliranmu" : "Menunggu...", 590, 590);
+    }
 
-        // --- LAYOVER GELAP DAN TULISAN VICTORY/DEFEAT ---
-        if (isGameOver || showVictoryScreen) {
-            g2d.setColor(new Color(0, 0, 0, 180));
-            g2d.fillRect(0, 0, getWidth(), getHeight());
+    private void drawBattleLog(Graphics2D g2d) {
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(40, 480, 290, 110, 12, 12);
 
-            BufferedImage currentImg = isGameOver ? gameOverImg : victoryImg;
-            if (currentImg != null) {
-                int drawW = 600;
-                int drawH = 350;
-                int x = (getWidth() - drawW) / 2;
-                int y = (getHeight() - drawH) / 2;
-                g2d.drawImage(currentImg, x, y, drawW, drawH, null);
-            }
+        g2d.setFont(new Font("Serif", Font.PLAIN, 13));
+        g2d.setColor(new Color(236, 236, 236));
+
+        int y = 500;
+        for (String line : battleLogs) {
+            g2d.drawString(line, 50, y);
+            y += 23;
         }
+    }
+
+    private void drawEndOverlay(Graphics2D g2d) {
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
+        BufferedImage currentImg = isGameOver ? gameOverImg : victoryImg;
+        if (currentImg != null) {
+            int drawW = 600;
+            int drawH = 350;
+            int x = (getWidth() - drawW) / 2;
+            int y = (getHeight() - drawH) / 2;
+            g2d.drawImage(currentImg, x, y, drawW, drawH, null);
+        } else {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Serif", Font.BOLD, 36));
+            g2d.drawString(isGameOver ? "GAME OVER" : "VICTORY", 390, 270);
+        }
+
+        g2d.setColor(new Color(255, 255, 255, 220));
+        g2d.fillRoundRect(415, 420, 170, 65, 12, 12);
+        g2d.setColor(new Color(40, 40, 40));
+        g2d.setFont(new Font("Serif", Font.BOLD, 22));
+        g2d.drawString("RESTART", 450, 462);
+        g2d.setFont(new Font("Serif", Font.PLAIN, 13));
+        g2d.drawString("Klik tombol atau tekan R", 427, 480);
     }
 
     private void drawStatusBars(Graphics2D g2d) {
-        drawBar(g2d, 50, 30, player.getName(), player.getHp(), player.getMaxHp(), Color.GREEN);
-        drawBar(g2d, 680, 30, currentEnemy.getName(), currentEnemy.getHp(), currentEnemy.getMaxHp(), Color.ORANGE);
+        drawBar(g2d, 50, 30, player.getName(), player.getHp(), player.getMaxHp(), Color.GREEN,
+                "LV " + player.getLevel() + " | EXP " + player.getExperience() + " | Score " + player.getScore());
+        drawBar(g2d, 680, 30, currentEnemy.getName(), currentEnemy.getHp(), currentEnemy.getMaxHp(), Color.ORANGE, "Enemy");
     }
 
-    private void drawBar(Graphics2D g2d, int x, int y, String name, int hp, int maxHp, Color barColor) {
+    private void drawBar(Graphics2D g2d, int x, int y, String name, int hp, int maxHp, Color barColor, String subtitle) {
         g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRect(x, y, 250, 70);
+        g2d.fillRect(x, y, 260, 78);
+
         g2d.setColor(new Color(220, 220, 220));
-        g2d.setFont(new Font("Serif", Font.PLAIN, 14));
-        g2d.drawString(name, x + 10, y + 25);
+        g2d.setFont(new Font("Serif", Font.BOLD, 14));
+        g2d.drawString(name, x + 10, y + 20);
+
+        g2d.setFont(new Font("Serif", Font.PLAIN, 12));
+        g2d.drawString(subtitle, x + 10, y + 35);
+
         g2d.setColor(new Color(60, 0, 0));
-        g2d.fillRect(x + 10, y + 40, 200, 10);
+        g2d.fillRect(x + 10, y + 48, 210, 12);
+
         g2d.setColor(barColor);
-        int barWidth = (int) (200 * ((double) Math.max(0, hp) / maxHp));
-        g2d.fillRect(x + 10, y + 40, barWidth, 10);
+        int safeMaxHp = Math.max(1, maxHp);
+        int barWidth = (int) (210 * ((double) Math.max(0, hp) / safeMaxHp));
+        g2d.fillRect(x + 10, y + 48, barWidth, 12);
+
+        g2d.setColor(new Color(245, 245, 245));
+        g2d.drawString(hp + "/" + maxHp, x + 225, y + 59);
     }
 
     public static void main(String[] args) {
