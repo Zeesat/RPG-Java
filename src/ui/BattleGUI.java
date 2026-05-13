@@ -51,14 +51,20 @@ public class BattleGUI extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (isGameOver || showVictoryScreen) {
-                    if (e.getX() >= 415 && e.getX() <= 585 && e.getY() >= 420 && e.getY() <= 485) {
+                int mx = e.getX();
+                int my = e.getY();
+
+                if (isGameOver) {
+                    if (mx >= 415 && mx <= 585 && my >= 420 && my <= 485) {
                         resetGame();
-                    } else if (showVictoryScreen) {
+                    }
+                } else if (showVictoryScreen) {
+                    if (mx >= 415 && mx <= 585 && my >= 420 && my <= 485) {
+                        System.out.println("Victory! Rewards collected. Exiting game...");
                         System.exit(0);
                     }
                 } else if (canAction) {
-                    handleActionClick(e.getX(), e.getY());
+                    handleActionClick(mx, my);
                 }
             }
         });
@@ -66,11 +72,13 @@ public class BattleGUI extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if ((isGameOver || showVictoryScreen) && e.getKeyCode() == KeyEvent.VK_R) {
+                if (isGameOver && e.getKeyCode() == KeyEvent.VK_R) {
                     resetGame();
                     return;
                 }
+
                 if (!canAction || isGameOver || showVictoryScreen) return;
+
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_1 -> executeAction(0);
                     case KeyEvent.VK_2 -> executeAction(1);
@@ -105,6 +113,7 @@ public class BattleGUI extends JPanel {
         fireballCount = 4;
         autoAttackTimer.restart();
         repaint();
+        this.requestFocusInWindow();
     }
 
     private void executeAction(int section) {
