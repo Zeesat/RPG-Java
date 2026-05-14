@@ -1,6 +1,5 @@
 package fantasyrpg.core;
 
-import fantasyrpg.entities.DragonBoss;
 import fantasyrpg.entities.Player;
 import fantasyrpg.ui.BattleGUI;
 
@@ -12,7 +11,6 @@ public class Game {
     public void start() {
         SwingUtilities.invokeLater(() -> {
             Player player = new Player("Arin");
-            DragonBoss dragonBoss = new DragonBoss();
 
             JFrame frame = new JFrame("Dungeon Battle: Rise of Hero");
 
@@ -21,7 +19,7 @@ public class Game {
             frame.setLocationRelativeTo(null);
             frame.setResizable(false);
 
-            frame.add(new BattleGUI(player, dragonBoss));
+            frame.add(new BattleGUI(player));
 
             frame.setVisible(true);
         });

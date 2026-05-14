@@ -2,6 +2,7 @@ package fantasyrpg.services;
 
 import fantasyrpg.entities.DragonBoss;
 import fantasyrpg.entities.Enemy;
+import fantasyrpg.entities.Goblin;
 import fantasyrpg.entities.Player;
 import fantasyrpg.interfaces.SkillUser;
 
@@ -40,7 +41,6 @@ public class BattleService {
         this.randomEventService = randomEventService;
     }
 
-    // compatibility method for old Game.java
     public boolean startBattle(
             Player player,
             Enemy enemy,
@@ -89,6 +89,7 @@ public class BattleService {
         switch (action) {
             case ATTACK -> {
                 int damage = player.attack(enemy);
+
                 return new ActionResult(
                         player.getName() + " menyerang: " + damage + " damage.",
                         damage
@@ -112,7 +113,7 @@ public class BattleService {
                 player.defend();
 
                 return new ActionResult(
-                        player.getName() + " bertahan!",
+                        player.getName() + " memasang pertahanan!",
                         0
                 );
             }
@@ -142,8 +143,16 @@ public class BattleService {
 
             damage = skillUser.useSkill(player);
 
+            String skillName = "Special Attack";
+
+            if (enemy instanceof DragonBoss) {
+                skillName = "Dragon Breath";
+            } else if (enemy instanceof Goblin) {
+                skillName = "Goblin Rampage";
+            }
+
             return new ActionResult(
-                    enemy.getName() + " menggunakan Dragon Breath! -" + damage + " HP",
+                    enemy.getName() + " menggunakan " + skillName + "! -" + damage + " HP",
                     damage
             );
         }

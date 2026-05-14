@@ -47,7 +47,12 @@ public class Player extends Character implements SkillUser {
     }
 
     public void setPotionCount(int count) {
-        this.potionCount = count;
+        potionCount = Math.max(0, count);
+    }
+
+    // FIX untuk stage reward
+    public void addPotion(int amount) {
+        potionCount += Math.max(0, amount);
     }
 
     public boolean usePotion() {
@@ -86,7 +91,7 @@ public class Player extends Character implements SkillUser {
 
     @Override
     public int attack(Character target) {
-        int damage = 12 + random.nextInt(7); // 12–18
+        int damage = 12 + random.nextInt(7); // 12-18
         target.receiveDamage(damage);
         return damage;
     }
