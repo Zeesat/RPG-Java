@@ -1,19 +1,25 @@
 package fantasyrpg.entities;
 
 import fantasyrpg.interfaces.SkillUser;
+import java.util.Random;
 
 public class Player extends Character implements SkillUser {
+    private final Random random = new Random();
+
     private int level;
     private int experience;
     private int score;
     private int potionCount;
+    private int fireballCharges;
 
     public Player(String name) {
-        super(name, 120, 18, 6);
+        super(name, 150, 15, 5);
+
         this.level = 1;
         this.experience = 0;
         this.score = 0;
-        this.potionCount = 3;
+        this.potionCount = 4;
+        this.fireballCharges = 3;
     }
 
     public int getLevel() {
@@ -32,54 +38,69 @@ public class Player extends Character implements SkillUser {
         return potionCount;
     }
 
-    public void addScore(int score) {
-        this.score += Math.max(0, score);
+    public int getFireballCharges() {
+        return fireballCharges;
     }
 
-    public void gainExperience(int amount) {
-        experience += Math.max(0, amount);
-        while (experience >= requiredExperience()) {
-            experience -= requiredExperience();
-            levelUp();
-        }
+    public void resetFireballCharges() {
+        fireballCharges = 3;
+    }
+
+    public void setPotionCount(int count) {
+        this.potionCount = count;
     }
 
     public boolean usePotion() {
         if (potionCount <= 0) {
             return false;
         }
+
         potionCount--;
-        heal(30 + (level * 5));
+        heal(50);
         return true;
     }
 
-    public void addPotion(int amount) {
-        potionCount += Math.max(0, amount);
+    public boolean canUseFireball() {
+        return fireballCharges > 0;
     }
 
-    private int requiredExperience() {
-        return level * 40;
+    public void gainExperience(int amount) {
+        experience += Math.max(0, amount);
+
+        while (experience >= level * 50) {
+            experience -= level * 50;
+            levelUp();
+        }
+    }
+
+    public void addScore(int amount) {
+        score += Math.max(0, amount);
     }
 
     private void levelUp() {
         level++;
-        setAttackPower(getAttackPower() + 4);
-        setDefense(getDefense() + 2);
+        setAttackPower(getAttackPower() + 2);
+        setDefense(getDefense() + 1);
         heal(25);
     }
 
     @Override
     public int attack(Character target) {
-        int damage = calculateBaseAttack() + (level * 2);
+        int damage = 12 + random.nextInt(7); // 12–18
         target.receiveDamage(damage);
         return damage;
     }
 
     @Override
     public int useSkill(Character target) {
-        int damage = calculateBaseAttack() + (level * 4) + 8;
+        if (fireballCharges <= 0) {
+            return 0;
+        }
+
+        fireballCharges--;
+
+        int damage = 35;
         target.receiveDamage(damage);
         return damage;
     }
 }
-

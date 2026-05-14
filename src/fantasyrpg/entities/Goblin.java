@@ -1,15 +1,22 @@
 package fantasyrpg.entities;
 
 public class Goblin extends Enemy {
+
     public Goblin() {
-        super("Goblin Raider", 60, 12, 3, 25, 100);
+        super(
+                "Goblin Raider",
+                70,
+                8,
+                2,
+                25,
+                100
+        );
     }
 
     @Override
     public int attack(Character target) {
-        int damage = calculateBaseAttack() + 3;
+        int damage = 10;
         target.receiveDamage(damage);
         return damage;
     }
 }
-
