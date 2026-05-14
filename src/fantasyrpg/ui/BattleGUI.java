@@ -43,8 +43,10 @@ public class BattleGUI extends JPanel {
     private int playerOffsetX = 0;
     private int bossOffsetX = 0;
     private int fireballX = -100;
+    private int goblinProjectileX = 700;
 
     private boolean showFireball = false;
+    private boolean showGoblinProjectile = false;
     private boolean canAction = true;
     private boolean actionLocked = false;
     private boolean isGameOver = false;
@@ -248,7 +250,11 @@ public class BattleGUI extends JPanel {
             if (isGameOver || showVictoryScreen) return;
             if (!currentEnemy.isAlive()) return;
 
-            playBossAttack(this::resolveEnemyTurn);
+            if (currentEnemy instanceof Goblin) {
+                playGoblinProjectile(this::resolveEnemyTurn);
+            } else {
+                playBossAttack(this::resolveEnemyTurn);
+            }
         });
 
         dragonAttackTimer.start();
@@ -289,6 +295,8 @@ public class BattleGUI extends JPanel {
         round = 1;
         bossOpacity = 1.0f;
         bossOffsetX = 0;
+        goblinProjectileX = 700;
+        showGoblinProjectile = false;
 
         loadStageAssets();
 
@@ -384,6 +392,25 @@ public class BattleGUI extends JPanel {
         t.start();
     }
 
+    private void playGoblinProjectile(Runnable onComplete) {
+        showGoblinProjectile = true;
+        goblinProjectileX = 700;
+
+        Timer t = new Timer(15, e -> {
+            if (goblinProjectileX > 220) {
+                goblinProjectileX -= 10;
+            } else {
+                showGoblinProjectile = false;
+                ((Timer)e.getSource()).stop();
+                onComplete.run();
+            }
+
+            repaint();
+        });
+
+        t.start();
+    }
+
     private void playDeathAnimation() {
         Timer t = new Timer(50, e -> {
             bossOpacity -= 0.05f;
@@ -419,9 +446,11 @@ public class BattleGUI extends JPanel {
         playerOffsetX = 0;
         bossOffsetX = 0;
         fireballX = -100;
+        goblinProjectileX = 700;
         bossOpacity = 1.0f;
 
         showFireball = false;
+        showGoblinProjectile = false;
         canAction = true;
         actionLocked = false;
         isGameOver = false;
@@ -479,6 +508,14 @@ public class BattleGUI extends JPanel {
         if (showFireball) {
             g2d.setColor(Color.ORANGE);
             g2d.fillOval(fireballX, 300, 40, 40);
+        }
+
+        if (showGoblinProjectile) {
+            g2d.setColor(new Color(0, 255, 80));
+            g2d.fillOval(goblinProjectileX, 290, 55, 55);
+
+            g2d.setColor(new Color(180, 255, 180, 120));
+            g2d.fillOval(goblinProjectileX - 8, 282, 70, 70);
         }
 
         if (bossImg != null) {
