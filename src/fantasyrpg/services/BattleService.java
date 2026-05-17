@@ -1,15 +1,15 @@
 package fantasyrpg.services;
 
-import java.util.Scanner;
-
-import fantasyrpg.entities.Character;
 import fantasyrpg.entities.DragonBoss;
 import fantasyrpg.entities.Enemy;
+import fantasyrpg.entities.Goblin;
 import fantasyrpg.entities.Player;
 import fantasyrpg.interfaces.SkillUser;
-import fantasyrpg.util.ConsoleFormatter;
+
+import java.util.Scanner;
 
 public class BattleService {
+
     public enum PlayerAction {
         ATTACK,
         SKILL,
@@ -41,97 +41,126 @@ public class BattleService {
         this.randomEventService = randomEventService;
     }
 
-    public boolean startBattle(Player player, Enemy enemy, Scanner scanner) {
-        int round = 1;
-
-        ConsoleFormatter.printSection("Battle Start");
-        System.out.println("Musuh muncul: " + enemy.getName());
-
+    public boolean startBattle(
+            Player player,
+            Enemy enemy,
+            Scanner scanner
+    ) {
         while (player.isAlive() && enemy.isAlive()) {
-            String roundEvent = beginRound(player, enemy);
+            System.out.println(beginRound(player, enemy));
 
-            ConsoleFormatter.printRound(round);
-            System.out.println(roundEvent);
-            showStatus(player, enemy);
+            String input = scanner.nextLine().trim();
 
-            handlePlayerTurn(player, enemy, scanner);
+            PlayerAction action = switch (input) {
+                case "2" -> PlayerAction.SKILL;
+                case "3" -> PlayerAction.DEFEND;
+                case "4" -> PlayerAction.POTION;
+                default -> PlayerAction.ATTACK;
+            };
+
+            ActionResult playerResult =
+                    executePlayerAction(player, enemy, action);
+
+            System.out.println(playerResult.getMessage());
+
             if (!enemy.isAlive()) {
+                applyVictoryRewards(player, enemy);
                 break;
             }
 
-            handleEnemyTurn(player, enemy);
-            round++;
+            ActionResult enemyResult =
+                    executeEnemyTurn(player, enemy);
+
+            System.out.println(enemyResult.getMessage());
         }
 
-        if (player.isAlive()) {
-            ActionResult rewardResult = applyVictoryRewards(player, enemy);
-            ConsoleFormatter.printSection("Victory");
-            System.out.println(rewardResult.getMessage());
-            return true;
-        }
-
-        ConsoleFormatter.printSection("Defeat");
-        System.out.println("Petualanganmu berakhir di tangan " + enemy.getName() + ".");
-        return false;
+        return player.isAlive();
     }
 
     public String beginRound(Player player, Enemy enemy) {
-        player.restoreTurnModifiers();
-        enemy.restoreTurnModifiers();
         return randomEventService.triggerRoundEvent(player, enemy);
     }
 
-    public ActionResult executePlayerAction(Player player, Enemy enemy, PlayerAction action) {
-        int damage;
-
+    public ActionResult executePlayerAction(
+            Player player,
+            Enemy enemy,
+            PlayerAction action
+    ) {
         switch (action) {
-            case SKILL:
-                damage = player.useSkill(enemy);
+            case ATTACK -> {
+                int damage = player.attack(enemy);
+
                 return new ActionResult(
-                        player.getName() + " menggunakan skill dan memberi " + damage + " damage.",
+                        player.getName() + " menyerang: " + damage + " damage.",
                         damage
                 );
-            case DEFEND:
-                player.defend();
-                return new ActionResult(player.getName() + " bersiap bertahan.", 0);
-            case POTION:
-                boolean usedPotion = player.usePotion();
-                if (usedPotion) {
-                    return new ActionResult(
-                            player.getName() + " meminum potion. HP sekarang: " + player.getHp(),
-                            0
-                    );
+            }
+
+            case SKILL -> {
+                if (!player.canUseFireball()) {
+                    return new ActionResult("Fireball sudah habis!", 0);
                 }
-                damage = player.attack(enemy);
+
+                int damage = player.useSkill(enemy);
+
                 return new ActionResult(
-                        "Potion habis. Serangan normal dilakukan sebagai gantinya. "
-                                + player.getName() + " menyerang dan memberi " + damage + " damage.",
+                        player.getName() + " melepaskan FIREBALL! " + damage + " damage!",
                         damage
                 );
-            case ATTACK:
-            default:
-                damage = player.attack(enemy);
+            }
+
+            case DEFEND -> {
+                player.defend();
+
                 return new ActionResult(
-                        player.getName() + " menyerang dan memberi " + damage + " damage.",
-                        damage
+                        player.getName() + " memasang pertahanan!",
+                        0
                 );
+            }
+
+            case POTION -> {
+                if (!player.usePotion()) {
+                    return new ActionResult("Potion habis!", 0);
+                }
+
+                return new ActionResult(
+                        player.getName() + " memulihkan 50 HP.",
+                        0
+                );
+            }
+
+            default -> {
+                return new ActionResult("Aksi tidak dikenal.", 0);
+            }
         }
     }
 
     public ActionResult executeEnemyTurn(Player player, Enemy enemy) {
         int damage;
 
-        if (enemy instanceof SkillUser skillUser && enemy.getHp() < (enemy.getMaxHp() / 2)) {
+        if (enemy instanceof SkillUser skillUser &&
+                enemy.getHp() <= enemy.getMaxHp() / 2) {
+
             damage = skillUser.useSkill(player);
+
+            String skillName = "Special Attack";
+
+            if (enemy instanceof DragonBoss) {
+                skillName = "Dragon Breath";
+            } else if (enemy instanceof Goblin) {
+                skillName = "Goblin Rampage";
+            }
+
             return new ActionResult(
-                    enemy.getName() + " menggunakan skill dan memberi " + damage + " damage.",
+                    enemy.getName() + " menggunakan " + skillName + "! -" + damage + " HP",
                     damage
             );
         }
 
         damage = enemy.attack(player);
+
         return new ActionResult(
-                enemy.getName() + " menyerang dan memberi " + damage + " damage.",
+                enemy.getName() + " menyerang! -" + damage + " HP",
                 damage
         );
     }
@@ -139,64 +168,20 @@ public class BattleService {
     public ActionResult applyVictoryRewards(Player player, Enemy enemy) {
         player.gainExperience(enemy.getRewardExperience());
         player.addScore(enemy.getRewardScore());
-        int bonusScore = 0;
+
+        int bonus = 0;
+
         if (enemy instanceof DragonBoss) {
-            bonusScore = 1000;
-            player.addScore(bonusScore);
+            bonus = 1000;
+            player.addScore(bonus);
         }
 
-        String message = "Kamu mengalahkan " + enemy.getName() + "!"
-                + " EXP +" + enemy.getRewardExperience()
-                + ", Score +" + enemy.getRewardScore();
-        if (bonusScore > 0) {
-            message += ", Bonus Boss +" + bonusScore;
-        }
-
-        return new ActionResult(message, 0);
-    }
-
-    private void handlePlayerTurn(Player player, Enemy enemy, Scanner scanner) {
-        System.out.println("Aksi:");
-        System.out.println("1. Attack");
-        System.out.println("2. Skill");
-        System.out.println("3. Defend");
-        System.out.println("4. Potion");
-        System.out.print("Pilih aksi: ");
-
-        String input = scanner.nextLine().trim();
-        ActionResult result;
-
-        switch (input) {
-            case "2":
-                result = executePlayerAction(player, enemy, PlayerAction.SKILL);
-                break;
-            case "3":
-                result = executePlayerAction(player, enemy, PlayerAction.DEFEND);
-                break;
-            case "4":
-                result = executePlayerAction(player, enemy, PlayerAction.POTION);
-                break;
-            case "1":
-            default:
-                result = executePlayerAction(player, enemy, PlayerAction.ATTACK);
-                break;
-        }
-
-        System.out.println(result.getMessage());
-    }
-
-    private void handleEnemyTurn(Player player, Enemy enemy) {
-        ActionResult result = executeEnemyTurn(player, enemy);
-        System.out.println(result.getMessage());
-    }
-
-    private void showStatus(Player player, Character enemy) {
-        System.out.println(player.getName() + " HP: " + player.getHp() + "/" + player.getMaxHp()
-                + " | LV: " + player.getLevel()
-                + " | EXP: " + player.getExperience()
-                + " | Score: " + player.getScore()
-                + " | Potion: " + player.getPotionCount());
-        System.out.println(enemy.getName() + " HP: " + enemy.getHp() + "/" + enemy.getMaxHp());
+        return new ActionResult(
+                "VICTORY! EXP +" +
+                        enemy.getRewardExperience() +
+                        " | Score +" +
+                        (enemy.getRewardScore() + bonus),
+                0
+        );
     }
 }
-

@@ -1,15 +1,31 @@
 package fantasyrpg.entities;
 
-public class Goblin extends Enemy {
+import fantasyrpg.interfaces.SkillUser;
+
+public class Goblin extends Enemy implements SkillUser {
+
     public Goblin() {
-        super("Goblin Raider", 60, 12, 3, 25, 100);
+        super(
+                "Goblin King",
+                260,
+                16,
+                4,
+                150,
+                800
+        );
     }
 
     @Override
     public int attack(Character target) {
-        int damage = calculateBaseAttack() + 3;
+        int damage = 16;
+        target.receiveDamage(damage);
+        return damage;
+    }
+
+    @Override
+    public int useSkill(Character target) {
+        int damage = 26;
         target.receiveDamage(damage);
         return damage;
     }
 }
-
