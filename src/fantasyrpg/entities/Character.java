@@ -5,11 +5,14 @@ import fantasyrpg.interfaces.Attackable;
 public abstract class Character implements Attackable {
     private final String name;
     private final int maxHp;
+
     private int hp;
     private int attackPower;
     private int defense;
     private double attackMultiplier;
     private double defenseMultiplier;
+
+    private boolean defending = false;
 
     protected Character(String name, int maxHp, int attackPower, int defense) {
         this.name = name;
@@ -76,10 +79,21 @@ public abstract class Character implements Attackable {
     public void restoreTurnModifiers() {
         attackMultiplier = 1.0;
         defenseMultiplier = 1.0;
+        defending = false;
     }
 
     public void defend() {
-        defenseMultiplier = 1.5;
+        defending = true;
+        defenseMultiplier = Math.max(defenseMultiplier, 1.5);
+    }
+
+    public void stopDefending() {
+        defending = false;
+        defenseMultiplier = 1.0;
+    }
+
+    public boolean isDefending() {
+        return defending;
     }
 
     protected int calculateFinalDamage(int rawDamage) {
@@ -93,8 +107,11 @@ public abstract class Character implements Attackable {
 
     @Override
     public void receiveDamage(int damage) {
-        int finalDamage = calculateFinalDamage(damage);
-        setHp(hp - finalDamage);
+        int reducedDamage = calculateFinalDamage(damage);
+        if (defending) {
+            reducedDamage = reducedDamage / 2;
+        }
+        setHp(hp - reducedDamage);
     }
 
     @Override
@@ -106,7 +123,7 @@ public abstract class Character implements Attackable {
 
     public int attack(Character target, int bonusDamage) {
         int dealtDamage = attack(target) + Math.max(0, bonusDamage);
-        target.receiveDamage(dealtDamage);
+        target.receiveDamage(bonusDamage);
         return dealtDamage;
     }
 
@@ -120,4 +137,3 @@ public abstract class Character implements Attackable {
         return baseDamage;
     }
 }
-

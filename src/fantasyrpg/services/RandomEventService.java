@@ -1,9 +1,9 @@
 package fantasyrpg.services;
 
-import java.util.Random;
-
 import fantasyrpg.entities.Character;
 import fantasyrpg.entities.Player;
+
+import java.util.Random;
 
 public class RandomEventService {
     private final Random random;
@@ -35,8 +35,6 @@ public class RandomEventService {
             player.setDefenseMultiplier(1.6);
             return "Guardian Aura: pertahanan player meningkat di ronde ini.";
         }
-
         return "Tidak ada event spesial pada ronde ini.";
     }
 }
-

@@ -3,8 +3,16 @@ package fantasyrpg.entities;
 import fantasyrpg.interfaces.SkillUser;
 
 public class DragonBoss extends Enemy implements SkillUser {
+
     public DragonBoss() {
-        super("Azhrax the Ash Dragon", 180, 24, 8, 100, 500);
+        super(
+                "Azhrax the Ash Dragon",
+                320,
+                18,
+                6,
+                100,
+                500
+        );
     }
 
     @Override
@@ -21,4 +29,3 @@ public class DragonBoss extends Enemy implements SkillUser {
         return damage;
     }
 }
-

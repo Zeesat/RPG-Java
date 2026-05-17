@@ -1,8 +1,16 @@
 package fantasyrpg.entities;
 
 public class OrcWarrior extends Enemy {
+
     public OrcWarrior() {
-        super("Orc Warrior", 90, 16, 5, 40, 175);
+        super(
+                "Orc Warrior",
+                120,
+                12,
+                4,
+                40,
+                175
+        );
     }
 
     @Override
@@ -12,4 +20,3 @@ public class OrcWarrior extends Enemy {
         return damage;
     }
 }
-
