@@ -56,19 +56,20 @@ public class BattleGUI extends JPanel {
     private Color playerOverlay = new Color(0, 0, 0, 0);
 
     public BattleGUI(Player player) {
-        this.player = player;
-        this.currentEnemy = new DragonBoss();
+        this(player, new DragonBoss());
+    }
 
-        this.battleService = new BattleService(
-                new RandomEventService(new Random())
-        );
+    public BattleGUI(Player player, Enemy enemy) {
+        this.player = player;
+        this.currentEnemy = enemy;
+        this.stage = (enemy instanceof Goblin) ? 2 : 1;
+        this.battleService = new BattleService(new RandomEventService(new Random()));
 
         setFocusable(true);
         SwingUtilities.invokeLater(this::requestFocusInWindow);
 
         loadCommonAssets();
         loadStageAssets();
-
         beginBattle();
         registerInputs();
     }
@@ -559,7 +560,7 @@ public class BattleGUI extends JPanel {
 
         g2d.setColor(Color.WHITE);
         g2d.drawString("Potion: " + player.getPotionCount(), 370, 590);
-        g2d.drawString("Fireball: " + player.getFireballCharges() + "/3", 470, 590);
+        g2d.drawString("Fireball: " + player.getFireballCharges() + "/" + player.getMaxFireballCharges(), 470, 590);
         g2d.drawString("Stage: " + stage, 620, 590);
     }
 

@@ -5,6 +5,7 @@ import java.util.Random;
 
 public class Player extends Character implements SkillUser {
     private final Random random = new Random();
+    private static final int MAX_FIREBALL_CHARGES = 3;
 
     private int level;
     private int experience;
@@ -19,7 +20,7 @@ public class Player extends Character implements SkillUser {
         this.experience = 0;
         this.score = 0;
         this.potionCount = 4;
-        this.fireballCharges = 3;
+        this.fireballCharges = MAX_FIREBALL_CHARGES;
     }
 
     public int getLevel() {
@@ -42,8 +43,12 @@ public class Player extends Character implements SkillUser {
         return fireballCharges;
     }
 
+    public int getMaxFireballCharges() {
+        return MAX_FIREBALL_CHARGES;
+    }
+
     public void resetFireballCharges() {
-        fireballCharges = 3;
+        fireballCharges = MAX_FIREBALL_CHARGES;
     }
 
     public void setPotionCount(int count) {
@@ -61,7 +66,7 @@ public class Player extends Character implements SkillUser {
         }
 
         potionCount--;
-        heal(50);
+        heal(30 + (level * 5));
         return true;
     }
 
@@ -72,8 +77,8 @@ public class Player extends Character implements SkillUser {
     public void gainExperience(int amount) {
         experience += Math.max(0, amount);
 
-        while (experience >= level * 50) {
-            experience -= level * 50;
+        while (experience >= requiredExperience()) {
+            experience -= requiredExperience();
             levelUp();
         }
     }
@@ -89,9 +94,14 @@ public class Player extends Character implements SkillUser {
         heal(25);
     }
 
+    private int requiredExperience() {
+        return level * 50;
+    }
+
     @Override
     public int attack(Character target) {
-        int damage = 12 + random.nextInt(7); // 12-18
+        int variance = random.nextInt(5) - 2;
+        int damage = Math.max(1, calculateBaseAttack() + (level * 2) + variance);
         target.receiveDamage(damage);
         return damage;
     }
@@ -104,7 +114,7 @@ public class Player extends Character implements SkillUser {
 
         fireballCharges--;
 
-        int damage = 35;
+        int damage = calculateBaseAttack() + (level * 4) + 8;
         target.receiveDamage(damage);
         return damage;
     }

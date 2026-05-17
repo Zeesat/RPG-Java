@@ -15,7 +15,7 @@ public class OrcWarrior extends Enemy {
 
     @Override
     public int attack(Character target) {
-        int damage = 14;
+        int damage = calculateBaseAttack() + 5;
         target.receiveDamage(damage);
         return damage;
     }

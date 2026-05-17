@@ -17,14 +17,14 @@ public class DragonBoss extends Enemy implements SkillUser {
 
     @Override
     public int attack(Character target) {
-        int damage = 18;
+        int damage = calculateBaseAttack() + 7;
         target.receiveDamage(damage);
         return damage;
     }
 
     @Override
     public int useSkill(Character target) {
-        int damage = 30;
+        int damage = calculateBaseAttack() + 18;
         target.receiveDamage(damage);
         return damage;
     }

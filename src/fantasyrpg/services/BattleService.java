@@ -78,6 +78,8 @@ public class BattleService {
     }
 
     public String beginRound(Player player, Enemy enemy) {
+        player.restoreTurnModifiers();
+        enemy.restoreTurnModifiers();
         return randomEventService.triggerRoundEvent(player, enemy);
     }
 
@@ -124,7 +126,7 @@ public class BattleService {
                 }
 
                 return new ActionResult(
-                        player.getName() + " memulihkan 50 HP.",
+                        player.getName() + " meminum potion.",
                         0
                 );
             }

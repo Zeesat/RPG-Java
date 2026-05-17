@@ -17,14 +17,14 @@ public class Goblin extends Enemy implements SkillUser {
 
     @Override
     public int attack(Character target) {
-        int damage = 16;
+        int damage = calculateBaseAttack() + 3;
         target.receiveDamage(damage);
         return damage;
     }
 
     @Override
     public int useSkill(Character target) {
-        int damage = 26;
+        int damage = calculateBaseAttack() + 10;
         target.receiveDamage(damage);
         return damage;
     }

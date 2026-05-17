@@ -9,6 +9,8 @@ public abstract class Character implements Attackable {
     private int hp;
     private int attackPower;
     private int defense;
+    private double attackMultiplier;
+    private double defenseMultiplier;
 
     private boolean defending = false;
 
@@ -18,6 +20,8 @@ public abstract class Character implements Attackable {
         this.hp = maxHp;
         this.attackPower = attackPower;
         this.defense = defense;
+        this.attackMultiplier = 1.0;
+        this.defenseMultiplier = 1.0;
     }
 
     public String getName() {
@@ -52,32 +56,61 @@ public abstract class Character implements Attackable {
         this.defense = Math.max(0, defense);
     }
 
+    public double getAttackMultiplier() {
+        return attackMultiplier;
+    }
+
+    public void setAttackMultiplier(double attackMultiplier) {
+        this.attackMultiplier = Math.max(0.5, attackMultiplier);
+    }
+
+    public double getDefenseMultiplier() {
+        return defenseMultiplier;
+    }
+
+    public void setDefenseMultiplier(double defenseMultiplier) {
+        this.defenseMultiplier = Math.max(0.5, defenseMultiplier);
+    }
+
     public void heal(int amount) {
         setHp(hp + Math.max(0, amount));
     }
 
+    public void restoreTurnModifiers() {
+        attackMultiplier = 1.0;
+        defenseMultiplier = 1.0;
+        defending = false;
+    }
+
     public void defend() {
         defending = true;
+        defenseMultiplier = Math.max(defenseMultiplier, 1.5);
     }
 
     public void stopDefending() {
         defending = false;
+        defenseMultiplier = 1.0;
     }
 
     public boolean isDefending() {
         return defending;
     }
 
+    protected int calculateFinalDamage(int rawDamage) {
+        int reduced = rawDamage - (int) Math.round(defense * defenseMultiplier);
+        return Math.max(1, reduced);
+    }
+
+    protected int calculateBaseAttack() {
+        return (int) Math.round(attackPower * attackMultiplier);
+    }
+
     @Override
     public void receiveDamage(int damage) {
-        int reducedDamage = damage - defense;
-
+        int reducedDamage = calculateFinalDamage(damage);
         if (defending) {
             reducedDamage = reducedDamage / 2;
         }
-
-        reducedDamage = Math.max(1, reducedDamage);
-
         setHp(hp - reducedDamage);
     }
 
@@ -87,4 +120,20 @@ public abstract class Character implements Attackable {
     }
 
     public abstract int attack(Character target);
+
+    public int attack(Character target, int bonusDamage) {
+        int dealtDamage = attack(target) + Math.max(0, bonusDamage);
+        target.receiveDamage(bonusDamage);
+        return dealtDamage;
+    }
+
+    public int attack(Character target, String skillName) {
+        int baseDamage = attack(target);
+        if ("critical".equalsIgnoreCase(skillName)) {
+            int bonusDamage = Math.max(2, baseDamage / 2);
+            target.receiveDamage(bonusDamage);
+            return baseDamage + bonusDamage;
+        }
+        return baseDamage;
+    }
 }
