@@ -34,12 +34,21 @@ public class GamePanel extends JPanel implements Runnable {
     public ArrayList<CollisionBlock> collisions =
             new ArrayList<>();
 
-    private Point[] monsterPlaceholders;
+    private final ArrayList<Point> monsterPlaceholders =
+            new ArrayList<>();
     private boolean battleTriggered;
+    private boolean playerNearMonster;
+    private boolean playerMovedSinceSpawn;
+    private int framesSinceWorldStart;
 
+    private static final boolean ENABLE_WORLD_BATTLE_TRIGGER = true;
+    private static final int WORLD_ENTRY_GRACE_FRAMES = 120;
     private static final int MONSTER_TRIGGER_DISTANCE = 70;
+    private static final int MIN_SPAWN_TO_MONSTER_DISTANCE = 140;
     private static final String MONSTER_PLACEHOLDER_TEXT =
             "monster icon placeholder,  get near to enter battle. GUI to be added";
+    private static final String INTERACT_PROMPT_TEXT =
+            "Press E to enter battle";
 
     public GamePanel() {
 
@@ -161,7 +170,16 @@ public class GamePanel extends JPanel implements Runnable {
 
     public void update() {
 
+        int previousX = player.x;
+        int previousY = player.y;
+
         player.update();
+        framesSinceWorldStart++;
+
+        if (player.x != previousX || player.y != previousY) {
+            playerMovedSinceSpawn = true;
+        }
+
         checkMonsterProximity();
     }
 
@@ -367,39 +385,67 @@ public class GamePanel extends JPanel implements Runnable {
 
     private void setupMonsterPlaceholders() {
 
+        monsterPlaceholders.clear();
+
+        if (!isWorldReadyForBattleTrigger()) {
+            return;
+        }
+
         int spawnCenterX = mapLoader.spawnX + 32;
         int spawnCenterY = mapLoader.spawnY + 32;
         int mapPixelWidth = mapLoader.mapWidth * mapLoader.tileWidth;
         int mapPixelHeight = mapLoader.mapHeight * mapLoader.tileHeight;
+        int minDistanceSquared = MIN_SPAWN_TO_MONSTER_DISTANCE * MIN_SPAWN_TO_MONSTER_DISTANCE;
 
-        monsterPlaceholders =
-                new Point[]{
-                        new Point(
-                                clampInt(spawnCenterX - 100, 0, mapPixelWidth - 1),
-                                clampInt(spawnCenterY - 220, 0, mapPixelHeight - 1)
-                        ),
-                        new Point(
-                                clampInt(spawnCenterX, 0, mapPixelWidth - 1),
-                                clampInt(spawnCenterY - 260, 0, mapPixelHeight - 1)
-                        ),
-                        new Point(
-                                clampInt(spawnCenterX + 100, 0, mapPixelWidth - 1),
-                                clampInt(spawnCenterY - 220, 0, mapPixelHeight - 1)
-                        )
-                };
+        addMonsterPointIfValid(
+                spawnCenterX - 100,
+                spawnCenterY - 220,
+                spawnCenterX,
+                spawnCenterY,
+                mapPixelWidth,
+                mapPixelHeight,
+                minDistanceSquared
+        );
+
+        addMonsterPointIfValid(
+                spawnCenterX,
+                spawnCenterY - 260,
+                spawnCenterX,
+                spawnCenterY,
+                mapPixelWidth,
+                mapPixelHeight,
+                minDistanceSquared
+        );
+
+        addMonsterPointIfValid(
+                spawnCenterX + 100,
+                spawnCenterY - 220,
+                spawnCenterX,
+                spawnCenterY,
+                mapPixelWidth,
+                mapPixelHeight,
+                minDistanceSquared
+        );
+
+        // Keep three placeholders even if map bounds are tight.
+        while (!monsterPlaceholders.isEmpty() && monsterPlaceholders.size() < 3) {
+            monsterPlaceholders.add(new Point(monsterPlaceholders.get(monsterPlaceholders.size() - 1)));
+        }
     }
 
     private void drawMonsterPlaceholders(Graphics2D g2) {
 
-        if (monsterPlaceholders == null || monsterPlaceholders.length == 0) {
+        if (monsterPlaceholders.isEmpty()) {
             return;
         }
 
         g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
         g2.setColor(new Color(21, 24, 31, 220));
 
-        int anchorX = monsterPlaceholders[1].x - 230;
-        int anchorY = monsterPlaceholders[1].y - 120;
+        Point anchorPoint = monsterPlaceholders.get(monsterPlaceholders.size() / 2);
+
+        int anchorX = anchorPoint.x - 230;
+        int anchorY = anchorPoint.y - 120;
         int textBoxWidth = 460;
         int textBoxHeight = 34;
 
@@ -419,6 +465,10 @@ public class GamePanel extends JPanel implements Runnable {
         }
 
         g2.setStroke(new BasicStroke(1f));
+
+        if (playerNearMonster) {
+            drawInteractPrompt(g2);
+        }
     }
 
     private void drawArrow(
@@ -444,13 +494,18 @@ public class GamePanel extends JPanel implements Runnable {
 
     private void checkMonsterProximity() {
 
-        if (battleTriggered || monsterPlaceholders == null) {
+        if (battleTriggered || !ENABLE_WORLD_BATTLE_TRIGGER || monsterPlaceholders.isEmpty()) {
+            return;
+        }
+
+        if (!isBattleTriggerArmed()) {
             return;
         }
 
         int playerCenterX = player.x + 32;
         int playerCenterY = player.y + 32;
         int triggerDistanceSquared = MONSTER_TRIGGER_DISTANCE * MONSTER_TRIGGER_DISTANCE;
+        playerNearMonster = false;
 
         for (Point point : monsterPlaceholders) {
             int dx = playerCenterX - point.x;
@@ -458,10 +513,92 @@ public class GamePanel extends JPanel implements Runnable {
             int distanceSquared = (dx * dx) + (dy * dy);
 
             if (distanceSquared <= triggerDistanceSquared) {
-                enterBattleScene();
-                return;
+                playerNearMonster = true;
+                break;
             }
         }
+
+        if (playerNearMonster && keyInput.consumeInteractPressed()) {
+            enterBattleScene();
+        }
+    }
+
+    private void drawInteractPrompt(Graphics2D g2) {
+
+        int boxX = player.x - 10;
+        int boxY = player.y - 34;
+        int boxWidth = 170;
+        int boxHeight = 24;
+
+        g2.setColor(new Color(14, 18, 24, 220));
+        g2.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 10, 10);
+        g2.setColor(new Color(250, 250, 250));
+        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
+        g2.drawString(INTERACT_PROMPT_TEXT, boxX + 10, boxY + 16);
+    }
+
+    private void addMonsterPointIfValid(
+            int candidateX,
+            int candidateY,
+            int spawnCenterX,
+            int spawnCenterY,
+            int mapPixelWidth,
+            int mapPixelHeight,
+            int minDistanceSquared
+    ) {
+
+        if (mapPixelWidth <= 0 || mapPixelHeight <= 0) {
+            return;
+        }
+
+        int safeX =
+                clampInt(candidateX, 0, mapPixelWidth - 1);
+        int safeY =
+                clampInt(candidateY, 0, mapPixelHeight - 1);
+
+        if (isTooCloseToSpawn(safeX, safeY, spawnCenterX, spawnCenterY, minDistanceSquared)) {
+            int fallbackY =
+                    clampInt(spawnCenterY + 220, 0, mapPixelHeight - 1);
+
+            if (!isTooCloseToSpawn(safeX, fallbackY, spawnCenterX, spawnCenterY, minDistanceSquared)) {
+                safeY = fallbackY;
+            }
+        }
+
+        if (isTooCloseToSpawn(safeX, safeY, spawnCenterX, spawnCenterY, minDistanceSquared)) {
+            return;
+        }
+
+        monsterPlaceholders.add(new Point(safeX, safeY));
+    }
+
+    private boolean isTooCloseToSpawn(
+            int pointX,
+            int pointY,
+            int spawnCenterX,
+            int spawnCenterY,
+            int minDistanceSquared
+    ) {
+
+        int dx = pointX - spawnCenterX;
+        int dy = pointY - spawnCenterY;
+        int distanceSquared = (dx * dx) + (dy * dy);
+
+        return distanceSquared < minDistanceSquared;
+    }
+
+    private boolean isWorldReadyForBattleTrigger() {
+
+        return mapLoader.mapWidth > 0
+                && mapLoader.mapHeight > 0
+                && mapLoader.tileWidth > 0
+                && mapLoader.tileHeight > 0;
+    }
+
+    private boolean isBattleTriggerArmed() {
+
+        return framesSinceWorldStart >= WORLD_ENTRY_GRACE_FRAMES
+                && playerMovedSinceSpawn;
     }
 
     private void enterBattleScene() {

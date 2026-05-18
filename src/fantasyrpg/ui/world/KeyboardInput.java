@@ -9,6 +9,7 @@ public class KeyboardInput implements KeyListener {
     public boolean downPressed;
     public boolean leftPressed;
     public boolean rightPressed;
+    private boolean interactPressed;
 
     @Override
     public void keyTyped(KeyEvent e) {
@@ -35,6 +36,10 @@ public class KeyboardInput implements KeyListener {
         if (code == KeyEvent.VK_D) {
             rightPressed = true;
         }
+
+        if (code == KeyEvent.VK_E) {
+            interactPressed = true;
+        }
     }
 
     @Override
@@ -57,5 +62,19 @@ public class KeyboardInput implements KeyListener {
         if (code == KeyEvent.VK_D) {
             rightPressed = false;
         }
+
+        if (code == KeyEvent.VK_E) {
+            interactPressed = false;
+        }
+    }
+
+    public boolean consumeInteractPressed() {
+
+        if (!interactPressed) {
+            return false;
+        }
+
+        interactPressed = false;
+        return true;
     }
 }
