@@ -1,10 +1,16 @@
 package fantasyrpg.ui.world;
 
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Window;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -27,6 +33,13 @@ public class GamePanel extends JPanel implements Runnable {
 
     public ArrayList<CollisionBlock> collisions =
             new ArrayList<>();
+
+    private Point[] monsterPlaceholders;
+    private boolean battleTriggered;
+
+    private static final int MONSTER_TRIGGER_DISTANCE = 70;
+    private static final String MONSTER_PLACEHOLDER_TEXT =
+            "monster icon placeholder,  get near to enter battle. GUI to be added";
 
     public GamePanel() {
 
@@ -67,6 +80,8 @@ public class GamePanel extends JPanel implements Runnable {
                         this,
                         keyInput
                 );
+
+        setupMonsterPlaceholders();
     }
 
     // =========================
@@ -147,6 +162,7 @@ public class GamePanel extends JPanel implements Runnable {
     public void update() {
 
         player.update();
+        checkMonsterProximity();
     }
 
     // =========================
@@ -185,6 +201,8 @@ public class GamePanel extends JPanel implements Runnable {
         drawMap(g2, false);
 
         player.draw(g2);
+
+        drawMonsterPlaceholders(g2);
 
         drawMap(g2, true);
 
@@ -345,5 +363,125 @@ public class GamePanel extends JPanel implements Runnable {
         }
 
         return tile.getHeight();
+    }
+
+    private void setupMonsterPlaceholders() {
+
+        int spawnCenterX = mapLoader.spawnX + 32;
+        int spawnCenterY = mapLoader.spawnY + 32;
+        int mapPixelWidth = mapLoader.mapWidth * mapLoader.tileWidth;
+        int mapPixelHeight = mapLoader.mapHeight * mapLoader.tileHeight;
+
+        monsterPlaceholders =
+                new Point[]{
+                        new Point(
+                                clampInt(spawnCenterX - 100, 0, mapPixelWidth - 1),
+                                clampInt(spawnCenterY - 220, 0, mapPixelHeight - 1)
+                        ),
+                        new Point(
+                                clampInt(spawnCenterX, 0, mapPixelWidth - 1),
+                                clampInt(spawnCenterY - 260, 0, mapPixelHeight - 1)
+                        ),
+                        new Point(
+                                clampInt(spawnCenterX + 100, 0, mapPixelWidth - 1),
+                                clampInt(spawnCenterY - 220, 0, mapPixelHeight - 1)
+                        )
+                };
+    }
+
+    private void drawMonsterPlaceholders(Graphics2D g2) {
+
+        if (monsterPlaceholders == null || monsterPlaceholders.length == 0) {
+            return;
+        }
+
+        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        g2.setColor(new Color(21, 24, 31, 220));
+
+        int anchorX = monsterPlaceholders[1].x - 230;
+        int anchorY = monsterPlaceholders[1].y - 120;
+        int textBoxWidth = 460;
+        int textBoxHeight = 34;
+
+        g2.fillRoundRect(anchorX, anchorY, textBoxWidth, textBoxHeight, 12, 12);
+        g2.setColor(new Color(248, 248, 248));
+        g2.drawString(MONSTER_PLACEHOLDER_TEXT, anchorX + 12, anchorY + 22);
+
+        g2.setStroke(new BasicStroke(3f));
+        g2.setColor(new Color(255, 89, 89));
+
+        for (Point point : monsterPlaceholders) {
+            drawArrow(g2, anchorX + (textBoxWidth / 2), anchorY + textBoxHeight, point.x, point.y);
+            g2.fillOval(point.x - 7, point.y - 7, 14, 14);
+            g2.setColor(new Color(255, 205, 205));
+            g2.drawOval(point.x - 11, point.y - 11, 22, 22);
+            g2.setColor(new Color(255, 89, 89));
+        }
+
+        g2.setStroke(new BasicStroke(1f));
+    }
+
+    private void drawArrow(
+            Graphics2D g2,
+            int startX,
+            int startY,
+            int endX,
+            int endY
+    ) {
+
+        g2.drawLine(startX, startY, endX, endY);
+
+        double angle = Math.atan2(endY - startY, endX - startX);
+        int arrowLength = 12;
+        int leftX = (int) (endX - arrowLength * Math.cos(angle - Math.PI / 7));
+        int leftY = (int) (endY - arrowLength * Math.sin(angle - Math.PI / 7));
+        int rightX = (int) (endX - arrowLength * Math.cos(angle + Math.PI / 7));
+        int rightY = (int) (endY - arrowLength * Math.sin(angle + Math.PI / 7));
+
+        g2.drawLine(endX, endY, leftX, leftY);
+        g2.drawLine(endX, endY, rightX, rightY);
+    }
+
+    private void checkMonsterProximity() {
+
+        if (battleTriggered || monsterPlaceholders == null) {
+            return;
+        }
+
+        int playerCenterX = player.x + 32;
+        int playerCenterY = player.y + 32;
+        int triggerDistanceSquared = MONSTER_TRIGGER_DISTANCE * MONSTER_TRIGGER_DISTANCE;
+
+        for (Point point : monsterPlaceholders) {
+            int dx = playerCenterX - point.x;
+            int dy = playerCenterY - point.y;
+            int distanceSquared = (dx * dx) + (dy * dy);
+
+            if (distanceSquared <= triggerDistanceSquared) {
+                enterBattleScene();
+                return;
+            }
+        }
+    }
+
+    private void enterBattleScene() {
+
+        battleTriggered = true;
+        gameThread = null;
+
+        SwingUtilities.invokeLater(() -> {
+            Window window = SwingUtilities.getWindowAncestor(this);
+
+            if (window != null) {
+                window.dispose();
+            }
+
+            new fantasyrpg.ui.battle.GameFrame();
+        });
+    }
+
+    private int clampInt(int value, int min, int max) {
+
+        return Math.max(min, Math.min(max, value));
     }
 }
