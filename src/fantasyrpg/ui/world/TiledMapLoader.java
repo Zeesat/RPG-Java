@@ -29,7 +29,7 @@ public class TiledMapLoader {
 
     public int spawnX;
     public int spawnY;
-    public ArrayList<Point> enemySpawnPoints =
+    public ArrayList<EnemySpawnPoint> enemySpawnPoints =
             new ArrayList<>();
 
     // TILE IMAGE
@@ -380,10 +380,92 @@ public class TiledMapLoader {
                 y += height / 2;
             }
 
+            String enemyId =
+                    readEnemyId(object);
+
             enemySpawnPoints.add(
-                    new Point(x, y)
+                    new EnemySpawnPoint(
+                            x,
+                            y,
+                            enemyId
+                    )
             );
         }
+    }
+
+    private String readEnemyId(Element object) {
+
+        String enemyId =
+                readObjectProperty(
+                        object,
+                        "enemyId"
+                );
+
+        if (enemyId == null || enemyId.isBlank()) {
+            enemyId =
+                    readObjectProperty(
+                            object,
+                            "enemy_id"
+                    );
+        }
+
+        if (enemyId == null || enemyId.isBlank()) {
+            enemyId =
+                    object.getAttribute("name");
+        }
+
+        if (enemyId == null || enemyId.isBlank()) {
+            return "default";
+        }
+
+        return enemyId.trim();
+    }
+
+    private String readObjectProperty(
+            Element object,
+            String propertyName
+    ) {
+
+        NodeList propertiesList =
+                object.getElementsByTagName(
+                        "properties"
+                );
+
+        if (propertiesList.getLength() == 0) {
+            return "";
+        }
+
+        Element propertiesElement =
+                (Element) propertiesList.item(0);
+
+        NodeList propertyList =
+                propertiesElement.getElementsByTagName(
+                        "property"
+                );
+
+        for (int i = 0; i < propertyList.getLength(); i++) {
+
+            Element property =
+                    (Element) propertyList.item(i);
+
+            String name =
+                    property.getAttribute("name");
+
+            if (!propertyName.equals(name)) {
+                continue;
+            }
+
+            String value =
+                    property.getAttribute("value");
+
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+
+            return property.getTextContent();
+        }
+
+        return "";
     }
 
     private int readIntAttribute(
