@@ -29,6 +29,8 @@ public class TiledMapLoader {
 
     public int spawnX;
     public int spawnY;
+    public ArrayList<Point> enemySpawnPoints =
+            new ArrayList<>();
 
     // TILE IMAGE
     public HashMap<Integer, BufferedImage> tiles =
@@ -88,6 +90,8 @@ public class TiledMapLoader {
 
             spawnY =
                     tileHeight;
+
+            enemySpawnPoints.clear();
 
             // =========================
             // LOAD TSX
@@ -190,6 +194,11 @@ public class TiledMapLoader {
                 if (name.equalsIgnoreCase("Spawn")) {
 
                     loadSpawnPoint(objectGroup);
+                }
+
+                if (isEnemySpawnGroupName(name)) {
+
+                    loadEnemySpawnPoints(objectGroup);
                 }
             }
 
@@ -321,6 +330,60 @@ public class TiledMapLoader {
 
         spawnY =
                 readIntAttribute(object, "y", spawnY);
+    }
+
+    private boolean isEnemySpawnGroupName(String objectGroupName) {
+
+        if (objectGroupName == null) {
+            return false;
+        }
+
+        String normalizedName =
+                objectGroupName
+                        .trim()
+                        .toLowerCase()
+                        .replace(" ", "")
+                        .replace("_", "")
+                        .replace("-", "");
+
+        return normalizedName.equals("enemyspawns")
+                || normalizedName.equals("enemyspawn");
+    }
+
+    private void loadEnemySpawnPoints(Element objectGroup) {
+
+        NodeList objects =
+                objectGroup.getElementsByTagName(
+                        "object"
+                );
+
+        for (int j = 0; j < objects.getLength(); j++) {
+
+            Element object =
+                    (Element) objects.item(j);
+
+            int x =
+                    readIntAttribute(object, "x", 0);
+
+            int y =
+                    readIntAttribute(object, "y", 0);
+
+            int width =
+                    readIntAttribute(object, "width", 0);
+
+            int height =
+                    readIntAttribute(object, "height", 0);
+
+            // If designer uses rectangle objects, treat center as spawn anchor.
+            if (width > 0 || height > 0) {
+                x += width / 2;
+                y += height / 2;
+            }
+
+            enemySpawnPoints.add(
+                    new Point(x, y)
+            );
+        }
     }
 
     private int readIntAttribute(

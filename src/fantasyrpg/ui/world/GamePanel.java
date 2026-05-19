@@ -391,10 +391,69 @@ public class GamePanel extends JPanel implements Runnable {
             return;
         }
 
-        int spawnCenterX = mapLoader.spawnX + 32;
-        int spawnCenterY = mapLoader.spawnY + 32;
         int mapPixelWidth = mapLoader.mapWidth * mapLoader.tileWidth;
         int mapPixelHeight = mapLoader.mapHeight * mapLoader.tileHeight;
+
+        addMonsterPointsFromMapData(
+                mapPixelWidth,
+                mapPixelHeight
+        );
+
+        if (monsterPlaceholders.isEmpty()) {
+            addDefaultMonsterPoints(
+                    mapPixelWidth,
+                    mapPixelHeight
+            );
+        }
+
+        // Keep three placeholders even if map bounds are tight.
+        while (!monsterPlaceholders.isEmpty() && monsterPlaceholders.size() < 3) {
+            monsterPlaceholders.add(new Point(monsterPlaceholders.get(monsterPlaceholders.size() - 1)));
+        }
+    }
+
+    private void addMonsterPointsFromMapData(
+            int mapPixelWidth,
+            int mapPixelHeight
+    ) {
+
+        if (mapPixelWidth <= 0 || mapPixelHeight <= 0) {
+            return;
+        }
+
+        for (Point spawnPoint : mapLoader.enemySpawnPoints) {
+            addMonsterPointFromMapIfValid(
+                    spawnPoint.x,
+                    spawnPoint.y,
+                    mapPixelWidth,
+                    mapPixelHeight
+            );
+        }
+    }
+
+    private void addMonsterPointFromMapIfValid(
+            int candidateX,
+            int candidateY,
+            int mapPixelWidth,
+            int mapPixelHeight
+    ) {
+
+        int safeX =
+                clampInt(candidateX, 0, mapPixelWidth - 1);
+
+        int safeY =
+                clampInt(candidateY, 0, mapPixelHeight - 1);
+
+        monsterPlaceholders.add(new Point(safeX, safeY));
+    }
+
+    private void addDefaultMonsterPoints(
+            int mapPixelWidth,
+            int mapPixelHeight
+    ) {
+
+        int spawnCenterX = mapLoader.spawnX + 32;
+        int spawnCenterY = mapLoader.spawnY + 32;
         int minDistanceSquared = MIN_SPAWN_TO_MONSTER_DISTANCE * MIN_SPAWN_TO_MONSTER_DISTANCE;
 
         addMonsterPointIfValid(
@@ -426,11 +485,6 @@ public class GamePanel extends JPanel implements Runnable {
                 mapPixelHeight,
                 minDistanceSquared
         );
-
-        // Keep three placeholders even if map bounds are tight.
-        while (!monsterPlaceholders.isEmpty() && monsterPlaceholders.size() < 3) {
-            monsterPlaceholders.add(new Point(monsterPlaceholders.get(monsterPlaceholders.size() - 1)));
-        }
     }
 
     private void drawMonsterPlaceholders(Graphics2D g2) {
