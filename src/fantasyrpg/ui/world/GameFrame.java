@@ -1,4 +1,4 @@
-package fantasyrpg.ui;
+package fantasyrpg.ui.world;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
