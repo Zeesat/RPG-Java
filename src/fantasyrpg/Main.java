@@ -1,14 +1,10 @@
 package fantasyrpg;
 
-import fantasyrpg.ui.battle.GameFrame;
-
-import javax.swing.SwingUtilities;
+import fantasyrpg.ui.start.StartingScreenFrame;
 
 public class Main {
 
     public static void main(String[] args) {
-
-        SwingUtilities.invokeLater(GameFrame::new);
+        StartingScreenFrame.showScreen();
     }
 }
-

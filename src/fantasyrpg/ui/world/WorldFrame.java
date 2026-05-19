@@ -4,14 +4,13 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-public class GameFrame extends JFrame {
-    public GameFrame() {
+public class WorldFrame extends JFrame {
+    public WorldFrame() {
         super("Fantasy RPG");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setResizable(true);
 
-        fantasyrpg.ui.world.GamePanel gamePanel =
-                new fantasyrpg.ui.world.GamePanel();
+        GamePanel gamePanel = new GamePanel();
 
         setContentPane(gamePanel);
         pack();
@@ -24,6 +23,6 @@ public class GameFrame extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(GameFrame::new);
+        SwingUtilities.invokeLater(WorldFrame::new);
     }
 }
