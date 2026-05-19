@@ -1,11 +1,14 @@
 package fantasyrpg;
 
-import fantasyrpg.core.Game;
+import fantasyrpg.ui.battle.GameFrame;
+
+import javax.swing.SwingUtilities;
 
 public class Main {
+
     public static void main(String[] args) {
-        Game game = new Game();
-        game.start();
+
+        SwingUtilities.invokeLater(GameFrame::new);
     }
 }
 
