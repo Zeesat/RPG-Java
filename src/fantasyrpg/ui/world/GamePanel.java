@@ -9,7 +9,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Window;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -34,7 +33,7 @@ public class GamePanel extends JPanel implements Runnable {
     public ArrayList<CollisionBlock> collisions =
             new ArrayList<>();
 
-    private final ArrayList<Point> monsterPlaceholders =
+    private final ArrayList<EnemySpawnPoint> monsterPlaceholders =
             new ArrayList<>();
     private boolean battleTriggered;
     private boolean playerNearMonster;
@@ -408,7 +407,16 @@ public class GamePanel extends JPanel implements Runnable {
 
         // Keep three placeholders even if map bounds are tight.
         while (!monsterPlaceholders.isEmpty() && monsterPlaceholders.size() < 3) {
-            monsterPlaceholders.add(new Point(monsterPlaceholders.get(monsterPlaceholders.size() - 1)));
+            EnemySpawnPoint lastSpawn =
+                    monsterPlaceholders.get(monsterPlaceholders.size() - 1);
+
+            monsterPlaceholders.add(
+                    new EnemySpawnPoint(
+                            lastSpawn.getX(),
+                            lastSpawn.getY(),
+                            lastSpawn.getEnemyId()
+                    )
+            );
         }
     }
 
@@ -421,10 +429,11 @@ public class GamePanel extends JPanel implements Runnable {
             return;
         }
 
-        for (Point spawnPoint : mapLoader.enemySpawnPoints) {
+        for (EnemySpawnPoint spawnPoint : mapLoader.enemySpawnPoints) {
             addMonsterPointFromMapIfValid(
-                    spawnPoint.x,
-                    spawnPoint.y,
+                    spawnPoint.getX(),
+                    spawnPoint.getY(),
+                    spawnPoint.getEnemyId(),
                     mapPixelWidth,
                     mapPixelHeight
             );
@@ -434,6 +443,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void addMonsterPointFromMapIfValid(
             int candidateX,
             int candidateY,
+            String enemyId,
             int mapPixelWidth,
             int mapPixelHeight
     ) {
@@ -444,7 +454,13 @@ public class GamePanel extends JPanel implements Runnable {
         int safeY =
                 clampInt(candidateY, 0, mapPixelHeight - 1);
 
-        monsterPlaceholders.add(new Point(safeX, safeY));
+        monsterPlaceholders.add(
+                new EnemySpawnPoint(
+                        safeX,
+                        safeY,
+                        enemyId
+                )
+        );
     }
 
     private void addDefaultMonsterPoints(
@@ -459,6 +475,7 @@ public class GamePanel extends JPanel implements Runnable {
         addMonsterPointIfValid(
                 spawnCenterX - 100,
                 spawnCenterY - 220,
+                "goblin",
                 spawnCenterX,
                 spawnCenterY,
                 mapPixelWidth,
@@ -469,6 +486,7 @@ public class GamePanel extends JPanel implements Runnable {
         addMonsterPointIfValid(
                 spawnCenterX,
                 spawnCenterY - 260,
+                "orc",
                 spawnCenterX,
                 spawnCenterY,
                 mapPixelWidth,
@@ -479,6 +497,7 @@ public class GamePanel extends JPanel implements Runnable {
         addMonsterPointIfValid(
                 spawnCenterX + 100,
                 spawnCenterY - 220,
+                "boss",
                 spawnCenterX,
                 spawnCenterY,
                 mapPixelWidth,
@@ -496,10 +515,10 @@ public class GamePanel extends JPanel implements Runnable {
         g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
         g2.setColor(new Color(21, 24, 31, 220));
 
-        Point anchorPoint = monsterPlaceholders.get(monsterPlaceholders.size() / 2);
+        EnemySpawnPoint anchorPoint = monsterPlaceholders.get(monsterPlaceholders.size() / 2);
 
-        int anchorX = anchorPoint.x - 230;
-        int anchorY = anchorPoint.y - 120;
+        int anchorX = anchorPoint.getX() - 230;
+        int anchorY = anchorPoint.getY() - 120;
         int textBoxWidth = 460;
         int textBoxHeight = 34;
 
@@ -510,12 +529,15 @@ public class GamePanel extends JPanel implements Runnable {
         g2.setStroke(new BasicStroke(3f));
         g2.setColor(new Color(255, 89, 89));
 
-        for (Point point : monsterPlaceholders) {
-            drawArrow(g2, anchorX + (textBoxWidth / 2), anchorY + textBoxHeight, point.x, point.y);
-            g2.fillOval(point.x - 7, point.y - 7, 14, 14);
-            g2.setColor(new Color(255, 205, 205));
-            g2.drawOval(point.x - 11, point.y - 11, 22, 22);
-            g2.setColor(new Color(255, 89, 89));
+        for (EnemySpawnPoint point : monsterPlaceholders) {
+            drawArrow(
+                    g2,
+                    anchorX + (textBoxWidth / 2),
+                    anchorY + textBoxHeight,
+                    point.getX(),
+                    point.getY()
+            );
+            EnemySpawnConfig.drawPlaceholderMarker(g2, point);
         }
 
         g2.setStroke(new BasicStroke(1f));
@@ -561,9 +583,9 @@ public class GamePanel extends JPanel implements Runnable {
         int triggerDistanceSquared = MONSTER_TRIGGER_DISTANCE * MONSTER_TRIGGER_DISTANCE;
         playerNearMonster = false;
 
-        for (Point point : monsterPlaceholders) {
-            int dx = playerCenterX - point.x;
-            int dy = playerCenterY - point.y;
+        for (EnemySpawnPoint point : monsterPlaceholders) {
+            int dx = playerCenterX - point.getX();
+            int dy = playerCenterY - point.getY();
             int distanceSquared = (dx * dx) + (dy * dy);
 
             if (distanceSquared <= triggerDistanceSquared) {
@@ -594,6 +616,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void addMonsterPointIfValid(
             int candidateX,
             int candidateY,
+            String enemyId,
             int spawnCenterX,
             int spawnCenterY,
             int mapPixelWidth,
@@ -623,7 +646,13 @@ public class GamePanel extends JPanel implements Runnable {
             return;
         }
 
-        monsterPlaceholders.add(new Point(safeX, safeY));
+        monsterPlaceholders.add(
+                new EnemySpawnPoint(
+                        safeX,
+                        safeY,
+                        enemyId
+                )
+        );
     }
 
     private boolean isTooCloseToSpawn(
