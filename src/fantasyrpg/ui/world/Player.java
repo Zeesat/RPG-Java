@@ -8,6 +8,12 @@ import java.io.File;
 
 public class Player {
 
+    public static final int DRAW_SIZE = 64;
+    public static final int SOLID_OFFSET_X = 8;
+    public static final int SOLID_OFFSET_Y = 16;
+    public static final int SOLID_WIDTH = 40;
+    public static final int SOLID_HEIGHT = 40;
+
     GamePanel gp;
 
     KeyboardInput keyInput;
@@ -40,10 +46,10 @@ public class Player {
         loadPlayerImages();
 
         solidArea = new Rectangle(
-                x + 8,
-                y + 16,
-                40,
-                40
+                x + SOLID_OFFSET_X,
+                y + SOLID_OFFSET_Y,
+                SOLID_WIDTH,
+                SOLID_HEIGHT
         );
     }
 
@@ -109,10 +115,10 @@ public class Player {
         }
 
         Rectangle nextArea = new Rectangle(
-                nextX + 8,
-                nextY + 16,
-                40,
-                40
+                nextX + SOLID_OFFSET_X,
+                nextY + SOLID_OFFSET_Y,
+                SOLID_WIDTH,
+                SOLID_HEIGHT
         );
 
         boolean collision = false;
@@ -139,9 +145,39 @@ public class Player {
                 currentSprite,
                 x,
                 y,
-                64,
-                64,
+                DRAW_SIZE,
+                DRAW_SIZE,
                 null
         );
+    }
+
+    public void setPosition(int newX, int newY) {
+
+        x = newX;
+        y = newY;
+        solidArea.setLocation(
+                x + SOLID_OFFSET_X,
+                y + SOLID_OFFSET_Y
+        );
+    }
+
+    public int getSolidLeft() {
+
+        return x + SOLID_OFFSET_X;
+    }
+
+    public int getSolidRight() {
+
+        return getSolidLeft() + SOLID_WIDTH;
+    }
+
+    public int getSolidTop() {
+
+        return y + SOLID_OFFSET_Y;
+    }
+
+    public int getSolidBottom() {
+
+        return getSolidTop() + SOLID_HEIGHT;
     }
 }
