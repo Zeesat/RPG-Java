@@ -20,6 +20,13 @@ public class GamePanel extends JPanel implements Runnable {
 
     final int screenWidth = 1280;
     final int screenHeight = 720;
+    private static final String PRIMARY_MAP_PATH =
+            "assets/maps/maps.tmx";
+    private static final String VARIANT_MAP_PATH =
+            "assets/maps/maps_variant.tmx";
+    private static final int MAP_TRANSITION_COOLDOWN_FRAMES = 20;
+    private static final int EDGE_TRANSITION_BAND_TILES = 3;
+    private static final int SPAWN_MARGIN_TILES = 1;
 
     Thread gameThread;
 
@@ -39,6 +46,8 @@ public class GamePanel extends JPanel implements Runnable {
     private boolean playerNearMonster;
     private boolean playerMovedSinceSpawn;
     private int framesSinceWorldStart;
+    private int mapTransitionCooldownFrames;
+    private String currentMapPath = PRIMARY_MAP_PATH;
 
     private static final boolean ENABLE_WORLD_BATTLE_TRIGGER = true;
     private static final int WORLD_ENTRY_GRACE_FRAMES = 120;
@@ -70,7 +79,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         mapLoader =
                 new TiledMapLoader(
-                        "assets/maps/maps.tmx"
+                        PRIMARY_MAP_PATH
                 );
 
         // =========================
@@ -179,6 +188,11 @@ public class GamePanel extends JPanel implements Runnable {
             playerMovedSinceSpawn = true;
         }
 
+        if (mapTransitionCooldownFrames > 0) {
+            mapTransitionCooldownFrames--;
+        }
+
+        checkMapTransition();
         checkMonsterProximity();
     }
 
@@ -597,6 +611,169 @@ public class GamePanel extends JPanel implements Runnable {
         if (playerNearMonster && keyInput.consumeInteractPressed()) {
             enterBattleScene();
         }
+    }
+
+    private void checkMapTransition() {
+
+        if (battleTriggered || mapTransitionCooldownFrames > 0) {
+            return;
+        }
+
+        if (PRIMARY_MAP_PATH.equals(currentMapPath)) {
+            tryMoveToVariantMapFromRightEdge();
+            return;
+        }
+
+        if (VARIANT_MAP_PATH.equals(currentMapPath)) {
+            tryMoveBackToPrimaryMapFromLeftEdge();
+        }
+    }
+
+    private void tryMoveToVariantMapFromRightEdge() {
+
+        if (!keyInput.rightPressed) {
+            return;
+        }
+
+        int mapPixelWidth =
+                mapLoader.mapWidth * mapLoader.tileWidth;
+        int transitionBandStart =
+                mapPixelWidth
+                        - (EDGE_TRANSITION_BAND_TILES * mapLoader.tileWidth);
+
+        if (player.getSolidRight() < transitionBandStart) {
+            return;
+        }
+
+        if (!isEdgeOpenForCurrentRow(true)) {
+            return;
+        }
+
+        int targetX =
+                mapLoader.tileWidth * SPAWN_MARGIN_TILES;
+        int targetY = player.y;
+
+        loadMapWithPlayerPosition(
+                VARIANT_MAP_PATH,
+                targetX,
+                targetY
+        );
+    }
+
+    private void tryMoveBackToPrimaryMapFromLeftEdge() {
+
+        if (!keyInput.leftPressed) {
+            return;
+        }
+
+        int transitionBandEnd =
+                EDGE_TRANSITION_BAND_TILES * mapLoader.tileWidth;
+
+        if (player.getSolidLeft() > transitionBandEnd) {
+            return;
+        }
+
+        if (!isEdgeOpenForCurrentRow(false)) {
+            return;
+        }
+
+        int mapPixelWidth =
+                mapLoader.mapWidth * mapLoader.tileWidth;
+        int targetX =
+                mapPixelWidth
+                        - ((SPAWN_MARGIN_TILES + 1) * mapLoader.tileWidth);
+        int targetY = player.y;
+
+        loadMapWithPlayerPosition(
+                PRIMARY_MAP_PATH,
+                targetX,
+                targetY
+        );
+    }
+
+    private boolean isEdgeOpenForCurrentRow(boolean rightEdge) {
+
+        int wallLayerIndex = findLayerIndexByName("Wall");
+
+        if (wallLayerIndex < 0) {
+            return true;
+        }
+
+        int col =
+                rightEdge
+                        ? mapLoader.mapWidth - 1
+                        : 0;
+
+        int topRow =
+                clampInt(
+                        player.getSolidTop() / mapLoader.tileHeight,
+                        0,
+                        mapLoader.mapHeight - 1
+                );
+        int bottomRow =
+                clampInt(
+                        (player.getSolidBottom() - 1)
+                                / mapLoader.tileHeight,
+                        0,
+                        mapLoader.mapHeight - 1
+                );
+
+        int[][] wallLayer =
+                mapLoader.mapLayers.get(wallLayerIndex);
+
+        for (int row = topRow; row <= bottomRow; row++) {
+            if (wallLayer[row][col] != 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private int findLayerIndexByName(String layerName) {
+
+        for (int i = 0; i < mapLoader.mapLayerNames.size(); i++) {
+            String currentLayerName =
+                    mapLoader.mapLayerNames.get(i);
+
+            if (currentLayerName.equalsIgnoreCase(layerName)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void loadMapWithPlayerPosition(
+            String mapPath,
+            int targetX,
+            int targetY
+    ) {
+
+        TiledMapLoader nextMapLoader =
+                new TiledMapLoader(mapPath);
+
+        mapLoader = nextMapLoader;
+        currentMapPath = mapPath;
+
+        collisions.clear();
+        setupCollision();
+
+        int maxX =
+                (mapLoader.mapWidth * mapLoader.tileWidth) - Player.DRAW_SIZE;
+        int maxY =
+                (mapLoader.mapHeight * mapLoader.tileHeight) - Player.DRAW_SIZE;
+
+        player.setPosition(
+                clampInt(targetX, 0, Math.max(0, maxX)),
+                clampInt(targetY, 0, Math.max(0, maxY))
+        );
+
+        setupMonsterPlaceholders();
+        framesSinceWorldStart = 0;
+        playerMovedSinceSpawn = false;
+        playerNearMonster = false;
+        mapTransitionCooldownFrames = MAP_TRANSITION_COOLDOWN_FRAMES;
     }
 
     private void drawInteractPrompt(Graphics2D g2) {
