@@ -11,6 +11,10 @@ public class KeyboardInput implements KeyListener {
     public boolean rightPressed;
     private boolean interactPressed;
 
+    // Track the order of key presses to prioritize the latest input
+    public char lastHorizontal = ' '; // 'L' for Left, 'R' for Right
+    public char lastVertical = ' ';   // 'U' for Up, 'D' for Down
+
     @Override
     public void keyTyped(KeyEvent e) {
 
@@ -23,18 +27,22 @@ public class KeyboardInput implements KeyListener {
 
         if (code == KeyEvent.VK_W) {
             upPressed = true;
+            lastVertical = 'U';
         }
 
         if (code == KeyEvent.VK_S) {
             downPressed = true;
+            lastVertical = 'D';
         }
 
         if (code == KeyEvent.VK_A) {
             leftPressed = true;
+            lastHorizontal = 'L';
         }
 
         if (code == KeyEvent.VK_D) {
             rightPressed = true;
+            lastHorizontal = 'R';
         }
 
         if (code == KeyEvent.VK_E) {
@@ -49,18 +57,30 @@ public class KeyboardInput implements KeyListener {
 
         if (code == KeyEvent.VK_W) {
             upPressed = false;
+            if (downPressed) {
+                lastVertical = 'D';
+            }
         }
 
         if (code == KeyEvent.VK_S) {
             downPressed = false;
+            if (upPressed) {
+                lastVertical = 'U';
+            }
         }
 
         if (code == KeyEvent.VK_A) {
             leftPressed = false;
+            if (rightPressed) {
+                lastHorizontal = 'R';
+            }
         }
 
         if (code == KeyEvent.VK_D) {
             rightPressed = false;
+            if (leftPressed) {
+                lastHorizontal = 'L';
+            }
         }
 
         if (code == KeyEvent.VK_E) {
