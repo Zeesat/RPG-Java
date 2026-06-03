@@ -36,6 +36,7 @@ public class GamePanel extends JPanel {
     private BufferedImage bg;
     private BufferedImage player;
     private BufferedImage slime;
+    private BufferedImage golem;
     private Timer effectTimer;
     private String activeEffect = "";
     private int effectFrame;
@@ -74,6 +75,7 @@ public class GamePanel extends JPanel {
         bindActionKey(KeyEvent.VK_J, "ATTACK");
         bindActionKey(KeyEvent.VK_K, "SKILL");
         bindActionKey(KeyEvent.VK_L, "DEFEND");
+        bindActionKey(KeyEvent.VK_B, "BACK");
     }
 
     private void bindActionKey(int keyCode, String action) {
@@ -113,6 +115,7 @@ public class GamePanel extends JPanel {
         bg = readImage("bg.png");
         player = readImage("player.png");
         slime = readImage("slime.png");
+        golem = readImage("golem.png");
     }
 
     private BufferedImage readImage(String name) {
@@ -145,10 +148,12 @@ public class GamePanel extends JPanel {
         drawText(g, "TURN " + turn, 49, 63, 24, TEXT, Font.BOLD);
 
         drawFrame(g, 455, 14, 456, 68);
-        drawCenteredText(g, "BOSS SLIME", 683, 59, 38, TEXT, Font.BOLD);
+        String name = isGolem() ? "STONE GOLEM" : "BOSS SLIME";
+        drawCenteredText(g, name, 683, 59, 38, TEXT, Font.BOLD);
 
         drawFrame(g, 1018, 90, 300, 94);
-        drawText(g, "BOSS", 1041, 131, 24, TEXT, Font.BOLD);
+        String label = isGolem() ? "GOLEM" : "BOSS";
+        drawText(g, label, 1041, 131, 24, TEXT, Font.BOLD);
         drawText(g, "LV. 3", 1188, 131, 24, new Color(255, 194, 35), Font.BOLD);
         drawText(g, "HP", 1041, 164, 22, TEXT, Font.BOLD);
         HealthBar.draw(g, 1083, 149, 128, 17, enemyHp, 100, new Color(236, 58, 46));
@@ -163,10 +168,19 @@ public class GamePanel extends JPanel {
 
         g.setColor(new Color(45, 32, 24, 120));
         g.fillOval(204, 535, 180, 38);
-        g.fillOval(992, 536, 190, 38);
+        if (isGolem()) {
+            g.fillOval(940, 565, 280, 48);
+        } else {
+            g.fillOval(992, 536, 190, 38);
+        }
 
         drawImageOrBox(g, player, 208 + heroOffset, 342, 230, 250, new Color(32, 79, 116));
-        drawImageOrBox(g, slime, 970 + slimeOffset, 420, 220, 178, new Color(80, 215, 34));
+        
+        if (isGolem()) {
+            drawImageOrBox(g, golem, 910 + slimeOffset, 258, 340, 340, new Color(112, 112, 112));
+        } else {
+            drawImageOrBox(g, slime, 970 + slimeOffset, 420, 220, 178, new Color(80, 215, 34));
+        }
 
         if (activeEffect.equals("HERO_SKILL")) {
             drawSlashEffect(g, 585, 365, 385, 200, new Color(92, 180, 255, 180));
@@ -176,7 +190,11 @@ public class GamePanel extends JPanel {
 
         if (activeEffect.equals("SLIME_HIT")) {
             g.setColor(new Color(255, 66, 46, 90));
-            g.fillOval(970, 420, 220, 178);
+            if (isGolem()) {
+                g.fillRect(910, 258, 340, 340);
+            } else {
+                g.fillOval(970, 420, 220, 178);
+            }
         }
 
         if (activeEffect.equals("SLIME_ATTACK")) {
@@ -239,14 +257,44 @@ public class GamePanel extends JPanel {
         g.drawLine(995, 638, 1295, 638);
 
         int y = 666;
-        for (String line : logLines) {
-            drawText(g, line, 995, y, 16, TEXT, Font.PLAIN);
+        if (battleEnded) {
+            String prompt = enemyHp == 0 ? "Tekan B untuk kembali" : "Tekan B ke Menu Utama";
+            drawText(g, prompt, 995, y, 16, new Color(255, 194, 35), Font.BOLD);
             y += 24;
+            drawText(g, logLines[0], 995, y, 16, TEXT, Font.PLAIN);
+        } else {
+            for (String line : logLines) {
+                drawText(g, line, 995, y, 16, TEXT, Font.PLAIN);
+                y += 24;
+            }
         }
     }
 
     private void handleAction(String action) {
-        if (battleEnded || !actionPanel.isEnabled()) {
+        if ("BACK".equals(action)) {
+            if (battleEnded) {
+                if (enemyHp == 0) {
+                    // Apply defeat state
+                    if (fantasyrpg.GameState.currentMapPath.endsWith("maps.tmx")) {
+                        if (fantasyrpg.GameState.currentEnemyIndex == 0) fantasyrpg.GameState.map1Enemy1Defeated = true;
+                        if (fantasyrpg.GameState.currentEnemyIndex == 1) fantasyrpg.GameState.map1Enemy2Defeated = true;
+                    } else {
+                        if (fantasyrpg.GameState.currentEnemyIndex == 0) fantasyrpg.GameState.map2Enemy1Defeated = true;
+                        if (fantasyrpg.GameState.currentEnemyIndex == 1) fantasyrpg.GameState.map2Enemy2Defeated = true;
+                    }
+                    returnToWorld();
+                } else {
+                    returnToStartScreen();
+                }
+            }
+            return;
+        }
+
+        if (battleEnded) {
+            return;
+        }
+
+        if (!actionPanel.isEnabled()) {
             return;
         }
 
@@ -287,7 +335,8 @@ public class GamePanel extends JPanel {
         enemyHp = Math.max(0, enemyHp - damage);
         if (enemyHp == 0) {
             battleEnded = true;
-            addLog("Slime kalah. Kamu menang!");
+            String name = isGolem() ? "Golem" : "Slime";
+            addLog(name + " kalah. Kamu menang!");
         }
     }
 
@@ -304,7 +353,8 @@ public class GamePanel extends JPanel {
         queueEffect("SLIME_ATTACK");
         queueEffect(defending ? "HERO_DEFEND" : "HERO_HIT");
         heroHp = Math.max(0, heroHp - damage);
-        addLog(defending ? "Serangan ditahan: -" + damage + " HP." : "Slime menyerang: -" + damage + " HP.");
+        String name = isGolem() ? "Golem" : "Slime";
+        addLog(defending ? "Serangan ditahan: -" + damage + " HP." : name + " menyerang: -" + damage + " HP.");
         turn++;
 
         if (heroHp == 0) {
@@ -386,5 +436,30 @@ public class GamePanel extends JPanel {
         g.setFont(new Font(Font.MONOSPACED, style, size));
         FontMetrics metrics = g.getFontMetrics();
         drawText(g, text, centerX - metrics.stringWidth(text) / 2, baselineY, size, color, style);
+    }
+
+    private void returnToWorld() {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+            if (window != null) {
+                window.dispose();
+            }
+            new fantasyrpg.ui.world.WorldFrame();
+        });
+    }
+
+    private void returnToStartScreen() {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+            if (window != null) {
+                window.dispose();
+            }
+            fantasyrpg.GameState.reset();
+            fantasyrpg.ui.start.StartingScreenFrame.showScreen();
+        });
+    }
+
+    private boolean isGolem() {
+        return fantasyrpg.GameState.currentMapPath.endsWith("maps.tmx") && fantasyrpg.GameState.currentEnemyIndex == 1;
     }
 }

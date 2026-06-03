@@ -37,6 +37,7 @@ public class StartingScreenFrame extends JFrame {
 
         movingToWorld = true;
         dispose();
+        fantasyrpg.GameState.reset();
         SwingUtilities.invokeLater(WorldFrame::new);
     }
 

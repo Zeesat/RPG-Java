@@ -94,25 +94,31 @@ public class TiledMapLoader {
             enemySpawnPoints.clear();
 
             // =========================
-            // LOAD TSX
+            // LOAD ALL TSX TILESETS
             // =========================
 
             NodeList tilesetList =
                     document.getElementsByTagName("tileset");
 
-            Element tilesetElement =
-                    (Element) tilesetList.item(0);
+            for (int i = 0; i < tilesetList.getLength(); i++) {
+                Element tilesetElement = (Element) tilesetList.item(i);
+                String tsxSource = tilesetElement.getAttribute("source");
+                int firstgid = 1;
+                String firstgidAttr = tilesetElement.getAttribute("firstgid");
+                if (firstgidAttr != null && !firstgidAttr.isEmpty()) {
+                    firstgid = Integer.parseInt(firstgidAttr);
+                }
 
-            String tsxSource =
-                    tilesetElement.getAttribute("source");
-
-            File tsxFile =
-                    new File(
-                            file.getParentFile(),
-                            tsxSource
-                    );
-
-            loadTSX(tsxFile);
+                if (tsxSource != null && !tsxSource.isEmpty()) {
+                    File tsxFile;
+                    if (tsxSource.contains(":") || tsxSource.startsWith("/")) {
+                        tsxFile = new File(tsxSource);
+                    } else {
+                        tsxFile = new File(file.getParentFile(), tsxSource);
+                    }
+                    loadTSX(tsxFile, firstgid);
+                }
+            }
 
             // =========================
             // LOAD TILE LAYER
@@ -214,7 +220,7 @@ public class TiledMapLoader {
     // LOAD TSX
     // =========================
 
-    private void loadTSX(File tsxFile) {
+    private void loadTSX(File tsxFile, int firstgid) {
 
         try {
 
@@ -224,8 +230,23 @@ public class TiledMapLoader {
             DocumentBuilder builder =
                     factory.newDocumentBuilder();
 
-            Document document =
-                    builder.parse(tsxFile);
+            Document document;
+            if (tsxFile.exists()) {
+                document = builder.parse(tsxFile);
+            } else {
+                // Fallback: look for the TSX file in local project directories if path doesn't exist
+                String tsxName = tsxFile.getName();
+                File localTSX = new File("assets/tiles", tsxName);
+                if (!localTSX.exists()) {
+                    localTSX = new File("assets/maps", tsxName);
+                }
+                if (localTSX.exists()) {
+                    document = builder.parse(localTSX);
+                } else {
+                    System.err.println("TSX file not found: " + tsxFile.getPath());
+                    return;
+                }
+            }
 
             document.getDocumentElement().normalize();
 
@@ -240,7 +261,7 @@ public class TiledMapLoader {
                 int id =
                         Integer.parseInt(
                                 tileElement.getAttribute("id")
-                        ) + 1;
+                        ) + firstgid;
 
                 Element imageElement =
                         (Element)
@@ -251,11 +272,9 @@ public class TiledMapLoader {
                 String source =
                         imageElement.getAttribute("source");
 
-                File imageFile =
-                        new File(
-                                tsxFile.getParentFile(),
-                                source
-                        );
+                // Dynamically resolve filename from the source attribute to assets/tiles/
+                String fileName = new File(source).getName();
+                File imageFile = new File("assets/tiles", fileName);
 
                 BufferedImage image =
                         ImageIO.read(imageFile);
@@ -263,7 +282,7 @@ public class TiledMapLoader {
                 tiles.put(id, image);
 
                 System.out.println(
-                        "Loaded Tile: " + source
+                        "Loaded Tile: " + fileName + " as GID " + id
                 );
             }
 

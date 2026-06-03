@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="16" nextobjectid="478">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="16" nextobjectid="479">
  <tileset firstgid="1" source="../tiles/Tiles.tsx"/>
  <layer id="1" name="Ground" width="30" height="30">
   <data encoding="csv">
@@ -346,30 +346,31 @@
   <object id="468" x="860" y="108" width="45.3333" height="180.666"/>
   <object id="469" x="834.667" y="90.6667" width="50.6667" height="30.6667"/>
   <object id="471" x="798" y="48" width="47.3333" height="48"/>
+  <object id="478" x="957.455" y="382.909" width="2.72727" height="80.1818"/>
  </objectgroup>
-<objectgroup id="14" name="spawn">
- <object id="474" name="spawn point" x="212.667" y="252">
-  <point/>
- </object>
-</objectgroup>
-<objectgroup id="15" name="EnemySpawns">
- <object id="475" name="enemy spawn 1" x="344" y="340">
-  <properties>
-   <property name="enemyId" value="goblin"/>
-  </properties>
-  <point/>
- </object>
- <object id="476" name="enemy spawn 2" x="544" y="340">
-  <properties>
-   <property name="enemyId" value="orc"/>
-  </properties>
-  <point/>
- </object>
- <object id="477" name="enemy spawn 3" x="644" y="340">
-  <properties>
-   <property name="enemyId" value="boss"/>
-  </properties>
-  <point/>
- </object>
-</objectgroup>
+ <objectgroup id="14" name="spawn">
+  <object id="474" name="spawn point" x="212.667" y="252">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="15" name="EnemySpawns">
+  <object id="475" name="enemy spawn 1" x="344" y="340">
+   <properties>
+    <property name="enemyId" value="goblin"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="476" name="enemy spawn 2" x="544" y="340">
+   <properties>
+    <property name="enemyId" value="orc"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="477" name="enemy spawn 3" x="644" y="340">
+   <properties>
+    <property name="enemyId" value="boss"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
 </map>
