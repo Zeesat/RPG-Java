@@ -6,5 +6,15 @@ if (-not (Test-Path $outputRoot)) {
     exit 1
 }
 
-java -cp $outputRoot fantasyrpg.Main
+$javaCommand = Get-Command java -ErrorAction SilentlyContinue
+$localJava = Join-Path $env:USERPROFILE ".jdks\openjdk-25.0.2\bin\java.exe"
+
+if ($javaCommand) {
+    & $javaCommand.Source -cp $outputRoot fantasyrpg.Main
+} elseif (Test-Path $localJava) {
+    & $localJava -cp $outputRoot fantasyrpg.Main
+} else {
+    Write-Host "java tidak ditemukan. Install JDK atau tambahkan java ke PATH."
+    exit 1
+}
 

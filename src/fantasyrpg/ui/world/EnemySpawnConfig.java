@@ -2,6 +2,9 @@ package fantasyrpg.ui.world;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
 import java.util.HashMap;
 
 public final class EnemySpawnConfig {
@@ -9,7 +12,21 @@ public final class EnemySpawnConfig {
     private static final HashMap<String, MarkerStyle> MARKER_STYLES =
             new HashMap<>();
 
+    private static BufferedImage slimeIcon;
+    private static BufferedImage golemIcon;
+
     static {
+        try {
+            slimeIcon = ImageIO.read(new File("assets/icons/slime_icon.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load assets/icons/slime_icon.png: " + e.getMessage());
+        }
+        try {
+            golemIcon = ImageIO.read(new File("assets/icons/golem_icon.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load assets/icons/golem_icon.png: " + e.getMessage());
+        }
+
         // Central place to configure enemy placeholder markers by enemyId.
         registerStyle("default", new MarkerStyle(
                 new Color(255, 89, 89),
@@ -48,36 +65,41 @@ public final class EnemySpawnConfig {
             EnemySpawnPoint spawnPoint
     ) {
 
-        MarkerStyle style =
-                resolveStyle(spawnPoint.getEnemyId());
+        String enemyId = normalizeEnemyId(spawnPoint.getEnemyId());
+        BufferedImage img = "golem".equals(enemyId) ? golemIcon : slimeIcon;
 
-        int x = spawnPoint.getX();
-        int y = spawnPoint.getY();
+        if (img != null) {
+            int x = spawnPoint.getX();
+            int y = spawnPoint.getY();
+            if ("golem".equals(enemyId)) {
+                g2.drawImage(img, x - 32, y - 32, 64, 64, null);
+            } else {
+                g2.drawImage(img, x - 24, y - 24, 48, 48, null);
+            }
+        } else {
+            MarkerStyle style =
+                    resolveStyle(spawnPoint.getEnemyId());
 
-        // Current placeholder rendering (no asset yet): filled oval + ring.
-        g2.setColor(style.fillColor);
-        g2.fillOval(
-                x - style.fillRadius,
-                y - style.fillRadius,
-                style.fillRadius * 2,
-                style.fillRadius * 2
-        );
+            int x = spawnPoint.getX();
+            int y = spawnPoint.getY();
 
-        g2.setColor(style.ringColor);
-        g2.drawOval(
-                x - style.ringRadius,
-                y - style.ringRadius,
-                style.ringRadius * 2,
-                style.ringRadius * 2
-        );
+            // Current placeholder rendering (no asset yet): filled oval + ring.
+            g2.setColor(style.fillColor);
+            g2.fillOval(
+                    x - style.fillRadius,
+                    y - style.fillRadius,
+                    style.fillRadius * 2,
+                    style.fillRadius * 2
+            );
 
-        /*
-         * Example when sprite assets are ready:
-         * BufferedImage icon = enemySpawnIcons.get(spawnPoint.getEnemyId());
-         * if (icon != null) {
-         *     g2.drawImage(icon, x - 16, y - 16, 32, 32, null);
-         * }
-         */
+            g2.setColor(style.ringColor);
+            g2.drawOval(
+                    x - style.ringRadius,
+                    y - style.ringRadius,
+                    style.ringRadius * 2,
+                    style.ringRadius * 2
+            );
+        }
     }
 
     public static String normalizeEnemyId(String enemyId) {

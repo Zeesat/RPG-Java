@@ -25,7 +25,7 @@ public class GamePanel extends JPanel implements Runnable {
     private static final String VARIANT_MAP_PATH =
             "assets/maps/dungeon.tmx";
     private static final int MAP_TRANSITION_COOLDOWN_FRAMES = 20;
-    private static final int EDGE_TRANSITION_BAND_TILES = 3;
+    private static final int EDGE_TRANSITION_BAND_TILES = 1;
     private static final int SPAWN_MARGIN_TILES = 1;
 
     Thread gameThread;
@@ -48,6 +48,14 @@ public class GamePanel extends JPanel implements Runnable {
     private int framesSinceWorldStart;
     private int mapTransitionCooldownFrames;
     private String currentMapPath = PRIMARY_MAP_PATH;
+
+    // Map Transition Fade System
+    private boolean isTransitioning = false;
+    private float transitionAlpha = 0f;
+    private boolean transitionHalfway = false;
+    private String nextMapPath = null;
+    private int nextTargetX = 0;
+    private int nextTargetY = 0;
 
     private static final boolean ENABLE_WORLD_BATTLE_TRIGGER = true;
     private static final int WORLD_ENTRY_GRACE_FRAMES = 120;
@@ -77,10 +85,16 @@ public class GamePanel extends JPanel implements Runnable {
         // LOAD MAP
         // =========================
 
+        String mapToLoad = PRIMARY_MAP_PATH;
+        if (fantasyrpg.GameState.playerX != -1) {
+            mapToLoad = fantasyrpg.GameState.currentMapPath;
+        }
+
         mapLoader =
                 new TiledMapLoader(
-                        PRIMARY_MAP_PATH
+                        mapToLoad
                 );
+        currentMapPath = mapToLoad;
 
         // =========================
         // COLLISION
@@ -97,6 +111,10 @@ public class GamePanel extends JPanel implements Runnable {
                         this,
                         keyInput
                 );
+
+        if (fantasyrpg.GameState.playerX != -1) {
+            player.setPosition(fantasyrpg.GameState.playerX, fantasyrpg.GameState.playerY);
+        }
 
         setupMonsterPlaceholders();
     }
@@ -177,6 +195,26 @@ public class GamePanel extends JPanel implements Runnable {
     // =========================
 
     public void update() {
+        if (isTransitioning) {
+            if (!transitionHalfway) {
+                // Fade out
+                transitionAlpha += 0.05f;
+                if (transitionAlpha >= 1f) {
+                    transitionAlpha = 1f;
+                    transitionHalfway = true;
+                    loadMapWithPlayerPosition(nextMapPath, nextTargetX, nextTargetY);
+                }
+            } else {
+                // Fade in
+                transitionAlpha -= 0.05f;
+                if (transitionAlpha <= 0f) {
+                    transitionAlpha = 0f;
+                    isTransitioning = false;
+                    transitionHalfway = false;
+                }
+            }
+            return;
+        }
 
         int previousX = player.x;
         int previousY = player.y;
@@ -199,6 +237,13 @@ public class GamePanel extends JPanel implements Runnable {
     // =========================
     // DRAW
     // =========================
+
+    private int getMonsterBaseY(EnemySpawnPoint point) {
+        if ("golem".equals(EnemySpawnConfig.normalizeEnemyId(point.getEnemyId()))) {
+            return point.getY() + 32;
+        }
+        return point.getY() + 24;
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -241,7 +286,7 @@ public class GamePanel extends JPanel implements Runnable {
             player.draw(g2);
         }
         for (EnemySpawnPoint point : monsterPlaceholders) {
-            int monsterBaseY = point.getY() + 48;
+            int monsterBaseY = getMonsterBaseY(point);
             int monsterRow = monsterBaseY / mapLoader.tileHeight;
             if (monsterRow < 0) {
                 EnemySpawnConfig.drawPlaceholderMarker(g2, point);
@@ -260,7 +305,7 @@ public class GamePanel extends JPanel implements Runnable {
 
             // Draw monsters first if they are behind objects in this row
             for (EnemySpawnPoint point : monsterPlaceholders) {
-                int monsterBaseY = point.getY() + 48;
+                int monsterBaseY = getMonsterBaseY(point);
                 int monsterRow = monsterBaseY / mapLoader.tileHeight;
                 if (monsterRow == row && (monsterBaseY < (row + 1) * mapLoader.tileHeight)) {
                     EnemySpawnConfig.drawPlaceholderMarker(g2, point);
@@ -277,7 +322,7 @@ public class GamePanel extends JPanel implements Runnable {
 
             // Draw monsters second if they are in front of objects in this row
             for (EnemySpawnPoint point : monsterPlaceholders) {
-                int monsterBaseY = point.getY() + 48;
+                int monsterBaseY = getMonsterBaseY(point);
                 int monsterRow = monsterBaseY / mapLoader.tileHeight;
                 if (monsterRow == row && (monsterBaseY >= (row + 1) * mapLoader.tileHeight)) {
                     EnemySpawnConfig.drawPlaceholderMarker(g2, point);
@@ -290,7 +335,7 @@ public class GamePanel extends JPanel implements Runnable {
             player.draw(g2);
         }
         for (EnemySpawnPoint point : monsterPlaceholders) {
-            int monsterBaseY = point.getY() + 48;
+            int monsterBaseY = getMonsterBaseY(point);
             int monsterRow = monsterBaseY / mapLoader.tileHeight;
             if (monsterRow >= mapLoader.mapHeight) {
                 EnemySpawnConfig.drawPlaceholderMarker(g2, point);
@@ -301,6 +346,14 @@ public class GamePanel extends JPanel implements Runnable {
         drawUIOverlay(g2);
 
         g2.dispose();
+
+        // Draw Screen Fade Transition Overlay
+        if (isTransitioning && transitionAlpha > 0f) {
+            Graphics2D gFade = (Graphics2D) g.create();
+            gFade.setColor(new Color(0, 0, 0, (int)(transitionAlpha * 255)));
+            gFade.fillRect(0, 0, getWidth(), getHeight());
+            gFade.dispose();
+        }
     }
 
     private double getCameraX(double scale) {
@@ -470,29 +523,15 @@ public class GamePanel extends JPanel implements Runnable {
         int mapPixelWidth = mapLoader.mapWidth * mapLoader.tileWidth;
         int mapPixelHeight = mapLoader.mapHeight * mapLoader.tileHeight;
 
-        addMonsterPointsFromMapData(
-                mapPixelWidth,
-                mapPixelHeight
-        );
-
-        if (monsterPlaceholders.isEmpty()) {
+        if (PRIMARY_MAP_PATH.equals(currentMapPath)) {
             addDefaultMonsterPoints(
                     mapPixelWidth,
                     mapPixelHeight
             );
-        }
-
-        // Keep three placeholders even if map bounds are tight.
-        while (!monsterPlaceholders.isEmpty() && monsterPlaceholders.size() < 3) {
-            EnemySpawnPoint lastSpawn =
-                    monsterPlaceholders.get(monsterPlaceholders.size() - 1);
-
-            monsterPlaceholders.add(
-                    new EnemySpawnPoint(
-                            lastSpawn.getX(),
-                            lastSpawn.getY(),
-                            lastSpawn.getEnemyId()
-                    )
+        } else {
+            addMonsterPointsFromMapData(
+                    mapPixelWidth,
+                    mapPixelHeight
             );
         }
     }
@@ -506,14 +545,22 @@ public class GamePanel extends JPanel implements Runnable {
             return;
         }
 
+        int index = 0;
         for (EnemySpawnPoint spawnPoint : mapLoader.enemySpawnPoints) {
-            addMonsterPointFromMapIfValid(
-                    spawnPoint.getX(),
-                    spawnPoint.getY(),
-                    spawnPoint.getEnemyId(),
-                    mapPixelWidth,
-                    mapPixelHeight
-            );
+            boolean isDefeated = false;
+            if (index == 0 && fantasyrpg.GameState.map2Enemy1Defeated) isDefeated = true;
+            if (index == 1 && fantasyrpg.GameState.map2Enemy2Defeated) isDefeated = true;
+
+            if (!isDefeated) {
+                addMonsterPointFromMapIfValid(
+                        spawnPoint.getX(),
+                        spawnPoint.getY(),
+                        spawnPoint.getEnemyId(),
+                        mapPixelWidth,
+                        mapPixelHeight
+                );
+            }
+            index++;
         }
     }
 
@@ -545,78 +592,79 @@ public class GamePanel extends JPanel implements Runnable {
             int mapPixelHeight
     ) {
 
-        int spawnCenterX = mapLoader.spawnX + 32;
-        int spawnCenterY = mapLoader.spawnY + 32;
-        int minDistanceSquared = MIN_SPAWN_TO_MONSTER_DISTANCE * MIN_SPAWN_TO_MONSTER_DISTANCE;
+        if (fantasyrpg.GameState.map1Enemy1X == -1) {
+            java.awt.Point p1 = findRandomValidPosition(mapPixelWidth, mapPixelHeight);
+            fantasyrpg.GameState.map1Enemy1X = p1.x;
+            fantasyrpg.GameState.map1Enemy1Y = p1.y;
 
-        addMonsterPointIfValid(
-                spawnCenterX - 100,
-                spawnCenterY - 220,
-                "goblin",
-                spawnCenterX,
-                spawnCenterY,
-                mapPixelWidth,
-                mapPixelHeight,
-                minDistanceSquared
-        );
+            java.awt.Point p2 = findRandomValidPosition(mapPixelWidth, mapPixelHeight);
+            while (p2.distance(p1) < 150) {
+                p2 = findRandomValidPosition(mapPixelWidth, mapPixelHeight);
+            }
+            fantasyrpg.GameState.map1Enemy2X = p2.x;
+            fantasyrpg.GameState.map1Enemy2Y = p2.y;
+        }
 
-        addMonsterPointIfValid(
-                spawnCenterX,
-                spawnCenterY - 260,
-                "orc",
-                spawnCenterX,
-                spawnCenterY,
-                mapPixelWidth,
-                mapPixelHeight,
-                minDistanceSquared
-        );
+        if (!fantasyrpg.GameState.map1Enemy1Defeated) {
+            monsterPlaceholders.add(new EnemySpawnPoint(
+                    fantasyrpg.GameState.map1Enemy1X,
+                    fantasyrpg.GameState.map1Enemy1Y,
+                    "goblin"
+            ));
+        }
 
-        addMonsterPointIfValid(
-                spawnCenterX + 100,
-                spawnCenterY - 220,
-                "boss",
-                spawnCenterX,
-                spawnCenterY,
-                mapPixelWidth,
-                mapPixelHeight,
-                minDistanceSquared
-        );
+        if (!fantasyrpg.GameState.map1Enemy2Defeated) {
+            monsterPlaceholders.add(new EnemySpawnPoint(
+                    fantasyrpg.GameState.map1Enemy2X,
+                    fantasyrpg.GameState.map1Enemy2Y,
+                    "golem"
+            ));
+        }
+    }
+
+    private java.awt.Point findRandomValidPosition(int mapPixelWidth, int mapPixelHeight) {
+        java.util.Random rand = new java.util.Random();
+        int margin = 64;
+
+        while (true) {
+            int x = margin + rand.nextInt(mapPixelWidth - 2 * margin);
+            int y = margin + rand.nextInt(mapPixelHeight - 2 * margin);
+
+            // Check distance from spawn
+            int dx = x - 64;
+            int dy = y - 64;
+            if ((dx * dx) + (dy * dy) < 180 * 180) {
+                continue;
+            }
+
+            // Check collision
+            boolean collides = false;
+            java.awt.Rectangle candidate = new java.awt.Rectangle(x, y, 32, 32);
+            for (CollisionBlock block : collisions) {
+                if (block.rectangle.intersects(candidate)) {
+                    collides = true;
+                    break;
+                }
+            }
+
+            if (!collides) {
+                return new java.awt.Point(x, y);
+            }
+        }
     }
 
     private void drawUIOverlay(Graphics2D g2) {
 
-        if (monsterPlaceholders.isEmpty()) {
-            return;
+        // Draw lock warning if player is trying to transition to Map 2 but hasn't defeated both Map 1 enemies
+        if (PRIMARY_MAP_PATH.equals(currentMapPath) && player.getSolidRight() >= (mapLoader.mapWidth - 2) * mapLoader.tileWidth) {
+            if (!fantasyrpg.GameState.map1Enemy1Defeated || !fantasyrpg.GameState.map1Enemy2Defeated) {
+                g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+                g2.setColor(new Color(255, 64, 64));
+                String msg = "Segel belum terbuka! Kalahkan semua musuh di Map 1 terlebih dahulu.";
+                int stringWidth = g2.getFontMetrics().stringWidth(msg);
+                g2.drawString(msg, (screenWidth - stringWidth) / 2, 80);
+            }
         }
-
-        g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-        g2.setColor(new Color(21, 24, 31, 220));
-
-        EnemySpawnPoint anchorPoint = monsterPlaceholders.get(monsterPlaceholders.size() / 2);
-
-        int anchorX = anchorPoint.getX() - 230;
-        int anchorY = anchorPoint.getY() - 120;
-        int textBoxWidth = 460;
-        int textBoxHeight = 34;
-
-        g2.fillRoundRect(anchorX, anchorY, textBoxWidth, textBoxHeight, 12, 12);
-        g2.setColor(new Color(248, 248, 248));
-        g2.drawString(MONSTER_PLACEHOLDER_TEXT, anchorX + 12, anchorY + 22);
-
-        g2.setStroke(new BasicStroke(3f));
-        g2.setColor(new Color(255, 89, 89));
-
-        for (EnemySpawnPoint point : monsterPlaceholders) {
-            drawArrow(
-                    g2,
-                    anchorX + (textBoxWidth / 2),
-                    anchorY + textBoxHeight,
-                    point.getX(),
-                    point.getY()
-            );
-        }
-
-        g2.setStroke(new BasicStroke(1f));
 
         if (playerNearMonster) {
             drawInteractPrompt(g2);
@@ -712,6 +760,7 @@ public class GamePanel extends JPanel implements Runnable {
         int playerCenterY = player.y + 32;
         int triggerDistanceSquared = MONSTER_TRIGGER_DISTANCE * MONSTER_TRIGGER_DISTANCE;
         playerNearMonster = false;
+        EnemySpawnPoint activePoint = null;
 
         for (EnemySpawnPoint point : monsterPlaceholders) {
             int dx = playerCenterX - point.getX();
@@ -720,11 +769,31 @@ public class GamePanel extends JPanel implements Runnable {
 
             if (distanceSquared <= triggerDistanceSquared) {
                 playerNearMonster = true;
+                activePoint = point;
                 break;
             }
         }
 
         if (playerNearMonster && keyInput.consumeInteractPressed()) {
+            // Save state to GameState
+            fantasyrpg.GameState.currentMapPath = currentMapPath;
+            fantasyrpg.GameState.playerX = player.x;
+            fantasyrpg.GameState.playerY = player.y;
+
+            if (PRIMARY_MAP_PATH.equals(currentMapPath)) {
+                if (activePoint.getX() == fantasyrpg.GameState.map1Enemy1X && activePoint.getY() == fantasyrpg.GameState.map1Enemy1Y) {
+                    fantasyrpg.GameState.currentEnemyIndex = 0;
+                } else {
+                    fantasyrpg.GameState.currentEnemyIndex = 1;
+                }
+            } else {
+                if ("goblin".equals(activePoint.getEnemyId())) {
+                    fantasyrpg.GameState.currentEnemyIndex = 0;
+                } else {
+                    fantasyrpg.GameState.currentEnemyIndex = 1;
+                }
+            }
+
             enterBattleScene();
         }
     }
@@ -743,6 +812,15 @@ public class GamePanel extends JPanel implements Runnable {
         if (VARIANT_MAP_PATH.equals(currentMapPath)) {
             tryMoveBackToPrimaryMapFromLeftEdge();
         }
+    }
+
+    private void startMapTransition(String mapPath, int targetX, int targetY) {
+        isTransitioning = true;
+        transitionHalfway = false;
+        transitionAlpha = 0f;
+        nextMapPath = mapPath;
+        nextTargetX = targetX;
+        nextTargetY = targetY;
     }
 
     private void tryMoveToVariantMapFromRightEdge() {
@@ -765,12 +843,17 @@ public class GamePanel extends JPanel implements Runnable {
             return;
         }
 
+        // Lock Map 2 until both Map 1 enemies are defeated
+        if (!fantasyrpg.GameState.map1Enemy1Defeated || !fantasyrpg.GameState.map1Enemy2Defeated) {
+            return;
+        }
+
         int targetX =
                 mapLoader.tileWidth * SPAWN_MARGIN_TILES;
         // Align with the dungeon entrance (y = 316 to 384) to avoid spawning in walls
         int targetY = 315;
 
-        loadMapWithPlayerPosition(
+        startMapTransition(
                 VARIANT_MAP_PATH,
                 targetX,
                 targetY
@@ -802,7 +885,7 @@ public class GamePanel extends JPanel implements Runnable {
         // Align with the primary map entrance (y = 384 to 462) to avoid spawning in walls (shifted 1 tile up to avoid tree collision)
         int targetY = 388;
 
-        loadMapWithPlayerPosition(
+        startMapTransition(
                 PRIMARY_MAP_PATH,
                 targetX,
                 targetY
