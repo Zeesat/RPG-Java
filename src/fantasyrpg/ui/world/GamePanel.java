@@ -23,7 +23,7 @@ public class GamePanel extends JPanel implements Runnable {
     private static final String PRIMARY_MAP_PATH =
             "assets/maps/maps.tmx";
     private static final String VARIANT_MAP_PATH =
-            "assets/maps/maps_variant.tmx";
+            "assets/maps/dungeon.tmx";
     private static final int MAP_TRANSITION_COOLDOWN_FRAMES = 20;
     private static final int EDGE_TRANSITION_BAND_TILES = 3;
     private static final int SPAWN_MARGIN_TILES = 1;
@@ -229,13 +229,76 @@ public class GamePanel extends JPanel implements Runnable {
                 -getCameraY(scale)
         );
 
+        // Draw background layers (like Ground)
         drawMap(g2, false);
 
-        player.draw(g2);
+        // Dynamic Y-Sorting based on entities' feet/base position
+        int playerFeetY = player.y + player.getDrawHeight();
+        int playerRow = playerFeetY / mapLoader.tileHeight;
 
-        drawMonsterPlaceholders(g2);
+        // Draw entities that might be above the map bounds
+        if (playerRow < 0) {
+            player.draw(g2);
+        }
+        for (EnemySpawnPoint point : monsterPlaceholders) {
+            int monsterBaseY = point.getY() + 48;
+            int monsterRow = monsterBaseY / mapLoader.tileHeight;
+            if (monsterRow < 0) {
+                EnemySpawnConfig.drawPlaceholderMarker(g2, point);
+            }
+        }
 
-        drawMap(g2, true);
+        // Draw upper layers (Object, Wall) row by row, sorting player/monsters inside
+        for (int row = 0; row < mapLoader.mapHeight; row++) {
+            boolean playerInRow = (playerRow == row);
+            boolean playerBehind = playerInRow && (playerFeetY < (row + 1) * mapLoader.tileHeight);
+
+            // Draw player first if they are behind objects in this row
+            if (playerInRow && playerBehind) {
+                player.draw(g2);
+            }
+
+            // Draw monsters first if they are behind objects in this row
+            for (EnemySpawnPoint point : monsterPlaceholders) {
+                int monsterBaseY = point.getY() + 48;
+                int monsterRow = monsterBaseY / mapLoader.tileHeight;
+                if (monsterRow == row && (monsterBaseY < (row + 1) * mapLoader.tileHeight)) {
+                    EnemySpawnConfig.drawPlaceholderMarker(g2, point);
+                }
+            }
+
+            // Draw objects of this row
+            drawMapRow(g2, row);
+
+            // Draw player second if they are in front of objects in this row
+            if (playerInRow && !playerBehind) {
+                player.draw(g2);
+            }
+
+            // Draw monsters second if they are in front of objects in this row
+            for (EnemySpawnPoint point : monsterPlaceholders) {
+                int monsterBaseY = point.getY() + 48;
+                int monsterRow = monsterBaseY / mapLoader.tileHeight;
+                if (monsterRow == row && (monsterBaseY >= (row + 1) * mapLoader.tileHeight)) {
+                    EnemySpawnConfig.drawPlaceholderMarker(g2, point);
+                }
+            }
+        }
+
+        // Draw entities that might be below the map bounds
+        if (playerRow >= mapLoader.mapHeight) {
+            player.draw(g2);
+        }
+        for (EnemySpawnPoint point : monsterPlaceholders) {
+            int monsterBaseY = point.getY() + 48;
+            int monsterRow = monsterBaseY / mapLoader.tileHeight;
+            if (monsterRow >= mapLoader.mapHeight) {
+                EnemySpawnConfig.drawPlaceholderMarker(g2, point);
+            }
+        }
+
+        // Draw UI overlay (arrows, textbox, and interact prompt)
+        drawUIOverlay(g2);
 
         g2.dispose();
     }
@@ -520,7 +583,7 @@ public class GamePanel extends JPanel implements Runnable {
         );
     }
 
-    private void drawMonsterPlaceholders(Graphics2D g2) {
+    private void drawUIOverlay(Graphics2D g2) {
 
         if (monsterPlaceholders.isEmpty()) {
             return;
@@ -551,13 +614,66 @@ public class GamePanel extends JPanel implements Runnable {
                     point.getX(),
                     point.getY()
             );
-            EnemySpawnConfig.drawPlaceholderMarker(g2, point);
         }
 
         g2.setStroke(new BasicStroke(1f));
 
         if (playerNearMonster) {
             drawInteractPrompt(g2);
+        }
+    }
+
+    private void drawMapRow(Graphics2D g2, int row) {
+        for (int layerIndex = 0;
+             layerIndex < mapLoader.mapLayers.size();
+             layerIndex++) {
+
+            if (!isUpperLayer(layerIndex)) {
+                continue;
+            }
+
+            int[][] layerData =
+                    mapLoader.mapLayers.get(layerIndex);
+
+            for (int col = 0;
+                 col < mapLoader.mapWidth;
+                 col++) {
+
+                int tileId =
+                        layerData[row][col];
+
+                if (tileId == 0) {
+                    continue;
+                }
+
+                BufferedImage tile =
+                        mapLoader.tiles.get(tileId);
+
+                if (tile == null) {
+                    continue;
+                }
+
+                int x =
+                        col * mapLoader.tileWidth;
+
+                int y =
+                        row * mapLoader.tileHeight;
+
+                int drawWidth =
+                        getDrawWidth(tile);
+
+                int drawHeight =
+                        getDrawHeight(tile);
+
+                g2.drawImage(
+                        tile,
+                        getDrawX(x),
+                        getDrawY(y, drawHeight),
+                        drawWidth,
+                        drawHeight,
+                        null
+                );
+            }
         }
     }
 
@@ -651,7 +767,8 @@ public class GamePanel extends JPanel implements Runnable {
 
         int targetX =
                 mapLoader.tileWidth * SPAWN_MARGIN_TILES;
-        int targetY = player.y;
+        // Align with the dungeon entrance (y = 316 to 384) to avoid spawning in walls
+        int targetY = 315;
 
         loadMapWithPlayerPosition(
                 VARIANT_MAP_PATH,
@@ -682,7 +799,8 @@ public class GamePanel extends JPanel implements Runnable {
         int targetX =
                 mapPixelWidth
                         - ((SPAWN_MARGIN_TILES + 1) * mapLoader.tileWidth);
-        int targetY = player.y;
+        // Align with the primary map entrance (y = 384 to 462) to avoid spawning in walls (shifted 1 tile up to avoid tree collision)
+        int targetY = 388;
 
         loadMapWithPlayerPosition(
                 PRIMARY_MAP_PATH,
@@ -760,9 +878,9 @@ public class GamePanel extends JPanel implements Runnable {
         setupCollision();
 
         int maxX =
-                (mapLoader.mapWidth * mapLoader.tileWidth) - Player.DRAW_SIZE;
+                (mapLoader.mapWidth * mapLoader.tileWidth) - player.getDrawWidth();
         int maxY =
-                (mapLoader.mapHeight * mapLoader.tileHeight) - Player.DRAW_SIZE;
+                (mapLoader.mapHeight * mapLoader.tileHeight) - player.getDrawHeight();
 
         player.setPosition(
                 clampInt(targetX, 0, Math.max(0, maxX)),
