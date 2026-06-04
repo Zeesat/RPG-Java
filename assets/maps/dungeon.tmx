@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="117">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="118">
  <tileset firstgid="1" source="../tiles/Tiles.tsx"/>
  <tileset firstgid="80" source="../tiles/Tileset.tsx"/>
  <tileset firstgid="108" source="D:/Download/Tileset.tsx"/>
@@ -226,13 +226,13 @@
    </properties>
    <point/>
   </object>
-  <object id="101" name="enemy spawn 2" x="578" y="433">
+  <object id="101" name="enemy spawn 3" x="578" y="433">
    <properties>
     <property name="enemyId" value="dragonboss"/>
    </properties>
    <point/>
   </object>
-  <object id="116" name="enemy spawn 3" x="241" y="834">
+  <object id="116" name="enemy spawn 2" x="241" y="834">
    <properties>
     <property name="enemyId" value="orc_warrior"/>
    </properties>

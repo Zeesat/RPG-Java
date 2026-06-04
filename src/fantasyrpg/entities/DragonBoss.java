@@ -18,7 +18,7 @@ import fantasyrpg.interfaces.SkillUser;
 public class DragonBoss extends Enemy implements SkillUser {
 
     public DragonBoss() {
-        super("Azhrax the Ash Dragon", 160, 15, 8, 180, 1200);
+        super("Azhrax the Ash Dragon", 250, 22, 9, 180, 1200);
     }
 
     @Override

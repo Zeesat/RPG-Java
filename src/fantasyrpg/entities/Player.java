@@ -22,7 +22,7 @@ public class Player extends Character implements SkillUser {
 
     
     private int maxFireballCharges = 2;
-    private static final int SKILL_COOLDOWN_TURNS  = 1;
+    private static final int SKILL_COOLDOWN_TURNS  = 3;
     private int fireballCharges;
     private int skillCooldown;          
 
