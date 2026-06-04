@@ -6,7 +6,7 @@ import javax.swing.WindowConstants;
 
 public class WorldFrame extends JFrame {
     public WorldFrame() {
-        super("Fantasy RPG");
+        super("Dungeon Battle: Rise of Hero");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setResizable(true);
 

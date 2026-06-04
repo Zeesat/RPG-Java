@@ -11,7 +11,6 @@ public abstract class Character implements Attackable {
     private int defense;
     private double attackMultiplier;
     private double defenseMultiplier;
-
     private boolean defending = false;
 
     protected Character(String name, int maxHp, int attackPower, int defense) {
@@ -24,63 +23,33 @@ public abstract class Character implements Attackable {
         this.defenseMultiplier = 1.0;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getMaxHp() {
-        return maxHp;
-    }
-
-    public int getHp() {
-        return hp;
-    }
+    public String getName()       { return name; }
+    public int    getMaxHp()      { return maxHp; }
+    public int    getHp()         { return hp; }
+    public int    getAttackPower(){ return attackPower; }
+    public int    getDefense()    { return defense; }
+    public double getAttackMultiplier()  { return attackMultiplier; }
+    public double getDefenseMultiplier() { return defenseMultiplier; }
+    public boolean isDefending()  { return defending; }
 
     public void setHp(int hp) {
         this.hp = Math.max(0, Math.min(maxHp, hp));
     }
+    protected void setAttackPower(int v) { this.attackPower = Math.max(1, v); }
+    protected void setDefense(int v)     { this.defense = Math.max(0, v); }
 
-    public int getAttackPower() {
-        return attackPower;
-    }
+    public void setAttackMultiplier(double m)  { this.attackMultiplier  = Math.max(0.5, m); }
+    public void setDefenseMultiplier(double m) { this.defenseMultiplier = Math.max(0.5, m); }
 
-    protected void setAttackPower(int attackPower) {
-        this.attackPower = Math.max(1, attackPower);
-    }
-
-    public int getDefense() {
-        return defense;
-    }
-
-    protected void setDefense(int defense) {
-        this.defense = Math.max(0, defense);
-    }
-
-    public double getAttackMultiplier() {
-        return attackMultiplier;
-    }
-
-    public void setAttackMultiplier(double attackMultiplier) {
-        this.attackMultiplier = Math.max(0.5, attackMultiplier);
-    }
-
-    public double getDefenseMultiplier() {
-        return defenseMultiplier;
-    }
-
-    public void setDefenseMultiplier(double defenseMultiplier) {
-        this.defenseMultiplier = Math.max(0.5, defenseMultiplier);
-    }
-
-    public void heal(int amount) {
-        setHp(hp + Math.max(0, amount));
-    }
+    public void heal(int amount) { setHp(hp + Math.max(0, amount)); }
 
     public void restoreTurnModifiers() {
-        attackMultiplier = 1.0;
+        attackMultiplier  = 1.0;
         defenseMultiplier = 1.0;
         defending = false;
     }
+
+    
 
     public void defend() {
         defending = true;
@@ -92,10 +61,6 @@ public abstract class Character implements Attackable {
         defenseMultiplier = 1.0;
     }
 
-    public boolean isDefending() {
-        return defending;
-    }
-
     protected int calculateFinalDamage(int rawDamage) {
         int reduced = rawDamage - (int) Math.round(defense * defenseMultiplier);
         return Math.max(1, reduced);
@@ -105,35 +70,40 @@ public abstract class Character implements Attackable {
         return (int) Math.round(attackPower * attackMultiplier);
     }
 
+    
+
+
+
+
+
+
     @Override
     public void receiveDamage(int damage) {
         int reducedDamage = calculateFinalDamage(damage);
         if (defending) {
-            reducedDamage = reducedDamage / 2;
+            reducedDamage = Math.max(1, (int) (reducedDamage * 0.55));
         }
         setHp(hp - reducedDamage);
     }
 
     @Override
-    public boolean isAlive() {
-        return hp > 0;
-    }
+    public boolean isAlive() { return hp > 0; }
 
     public abstract int attack(Character target);
 
     public int attack(Character target, int bonusDamage) {
-        int dealtDamage = attack(target) + Math.max(0, bonusDamage);
+        int dealt = attack(target) + Math.max(0, bonusDamage);
         target.receiveDamage(bonusDamage);
-        return dealtDamage;
+        return dealt;
     }
 
     public int attack(Character target, String skillName) {
-        int baseDamage = attack(target);
+        int base = attack(target);
         if ("critical".equalsIgnoreCase(skillName)) {
-            int bonusDamage = Math.max(2, baseDamage / 2);
-            target.receiveDamage(bonusDamage);
-            return baseDamage + bonusDamage;
+            int bonus = Math.max(2, base / 2);
+            target.receiveDamage(bonus);
+            return base + bonus;
         }
-        return baseDamage;
+        return base;
     }
 }
