@@ -133,10 +133,21 @@ public class GamePanel extends JPanel {
         actionPanel.setActionListener(this::handleAction);
         setupKeyBindings();
         initBattle();
+
+        setFocusable(true);
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (battleEnded && "DRAGON".equals(getEnemyType())) {
+                    System.exit(0);
+                }
+            }
+        });
     }
 
     
     private void initBattle() {
+        actionPanel.setVisible(true);
         playerEntity = new fantasyrpg.entities.Player("Hero");
         int defeatedCount = 0;
         if (fantasyrpg.GameState.map1Enemy1Defeated) defeatedCount++;
@@ -642,11 +653,12 @@ public class GamePanel extends JPanel {
 
     
     private void handleAction(String action) {
+        if (battleEnded && "DRAGON".equals(getEnemyType())) {
+            System.exit(0);
+        }
+
         if ("BACK".equals(action)) {
             if (battleEnded) {
-                if ("DRAGON".equals(getEnemyType())) {
-                    return;
-                }
                 fantasyrpg.sound.SoundManager.stopBGM();
                 if (enemyHp == 0) {
                     applyDefeatState();
@@ -707,8 +719,8 @@ public class GamePanel extends JPanel {
 
     
     private void doSkill() {
-        if (playerEntity.getSkillCooldown() > 0) {
-            addLog("Skill on cooldown! (" + playerEntity.getSkillCooldown() + " turns left)");
+        if (skillCooldownLeft > 0) {
+            addLog("Skill on cooldown! (" + skillCooldownLeft + " turns left)");
             spawnFloating(320, 460, "COOLDOWN!", new Color(255, 150, 50));
             repaint(); return;
         }
@@ -944,15 +956,9 @@ public class GamePanel extends JPanel {
         
         if ("DRAGON".equals(getEnemyType())) {
             fantasyrpg.sound.SoundManager.playBGM("ENDING");
+            actionPanel.setVisible(false);
             actionPanel.setEnabled(false);
             actionPanel.setActionsEnabled(false);
-            
-            
-            Timer endTimer = new Timer(5000, e -> {
-                System.exit(0);
-            });
-            endTimer.setRepeats(false);
-            endTimer.start();
         }
     }
 

@@ -14,7 +14,7 @@ import fantasyrpg.interfaces.SkillUser;
 public class Goblin extends Enemy implements SkillUser {
 
     public Goblin() {
-        super("Goblin King", 70, 13, 3, 120, 600);
+        super("Goblin King", 120, 13, 3, 120, 600);
     }
 
     @Override
