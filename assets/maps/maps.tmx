@@ -354,19 +354,19 @@
   </object>
  </objectgroup>
  <objectgroup id="15" name="EnemySpawns">
-  <object id="475" name="enemy spawn 1" x="344" y="340">
+  <object id="475" name="enemy spawn 1" x="205.333" y="382.667">
    <properties>
     <property name="enemyId" value="goblin"/>
    </properties>
    <point/>
   </object>
-  <object id="476" name="enemy spawn 2" x="544" y="340">
+  <object id="476" name="enemy spawn 2" x="589.333" y="594.667">
    <properties>
     <property name="enemyId" value="orc"/>
    </properties>
    <point/>
   </object>
-  <object id="477" name="enemy spawn 3" x="644" y="340">
+  <object id="477" name="enemy spawn 3" x="610.667" y="274.667">
    <properties>
     <property name="enemyId" value="boss"/>
    </properties>

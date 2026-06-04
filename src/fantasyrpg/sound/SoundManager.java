@@ -285,29 +285,69 @@ public class SoundManager {
                         step++;
                     }
                 } else if ("ENDING".equals(type)) {
-                    channels[0].programChange(0);  
-                    channels[1].programChange(48); 
-                    
+                    channels[0].programChange(91);  // Choir Aahs
+                    channels[1].programChange(48);  // String Ensemble 1
+                    channels[2].programChange(60);  // French Horn (Melody)
+                    channels[3].programChange(47);  // Timpani
+
                     int[][] chords = {
-                        {60, 64, 67, 72}, 
-                        {65, 69, 72, 77}, 
-                        {67, 71, 74, 79}, 
-                        {60, 64, 67, 72}  
+                        {50, 53, 57, 62}, // Dm
+                        {46, 50, 53, 58}, // Bb
+                        {48, 52, 55, 60}, // C
+                        {45, 48, 52, 57}, // Am
+                        {43, 46, 50, 55}, // Gm
+                        {50, 53, 57, 62}, // Dm
+                        {46, 50, 53, 58}, // Bb
+                        {45, 49, 52, 57}  // A
                     };
-                    
+
+                    int[] melody = {
+                        // Dm
+                        50, 53, 57, 62,
+                        // Bb
+                        58, 53, 50, 53,
+                        // C
+                        52, 55, 60, 64,
+                        // Am
+                        57, 52, 48, 52,
+                        // Gm
+                        50, 53, 55, 58,
+                        // Dm
+                        57, 53, 50, 53,
+                        // Bb
+                        58, 62, 65, 62,
+                        // A
+                        61, 57, 53, 57
+                    };
+
                     int step = 0;
                     while (bgmRunning) {
-                        int[] chord = chords[step % chords.length];
-                        for (int note : chord) {
-                            channels[1].noteOn(note - 12, 60); 
-                            channels[0].noteOn(note, 80);      
+                        int chordIndex = (step / 4) % chords.length;
+                        int[] chord = chords[chordIndex];
+
+                        if (step % 4 == 0) {
+                            channels[3].noteOn(chord[0] - 12, 100); // Booming Timpani
+                            for (int note : chord) {
+                                channels[1].noteOn(note - 12, 55); // String pad
+                                channels[0].noteOn(note, 65);      // Choir
+                            }
                         }
-                        
-                        Thread.sleep(1000);
-                        
-                        for (int note : chord) {
-                            channels[1].noteOff(note - 12);
-                            channels[0].noteOff(note);
+
+                        int mNote = melody[step % melody.length];
+                        channels[2].noteOn(mNote, 80);
+
+                        Thread.sleep(600); // Slow, majestic tempo
+
+                        channels[2].noteOff(mNote);
+                        if (step % 4 == 0) {
+                            channels[3].noteOff(chord[0] - 12);
+                        }
+
+                        if (step % 4 == 3) {
+                            for (int note : chord) {
+                                channels[1].noteOff(note - 12);
+                                channels[0].noteOff(note);
+                            }
                         }
                         step++;
                     }
