@@ -32,11 +32,11 @@ public class TiledMapLoader {
     public ArrayList<EnemySpawnPoint> enemySpawnPoints =
             new ArrayList<>();
 
-    // TILE IMAGE
+    
     public HashMap<Integer, BufferedImage> tiles =
             new HashMap<>();
 
-    // COLLISION
+    
     public ArrayList<Rectangle> collisions =
             new ArrayList<>();
 
@@ -93,9 +93,9 @@ public class TiledMapLoader {
 
             enemySpawnPoints.clear();
 
-            // =========================
-            // LOAD ALL TSX TILESETS
-            // =========================
+            
+            
+            
 
             NodeList tilesetList =
                     document.getElementsByTagName("tileset");
@@ -120,9 +120,9 @@ public class TiledMapLoader {
                 }
             }
 
-            // =========================
-            // LOAD TILE LAYER
-            // =========================
+            
+            
+            
 
             NodeList layerList =
                     document.getElementsByTagName("layer");
@@ -174,9 +174,9 @@ public class TiledMapLoader {
                             ? new int[mapHeight][mapWidth]
                             : mapLayers.get(0);
 
-            // =========================
-            // LOAD COLLISION
-            // =========================
+            
+            
+            
 
             NodeList objectGroups =
                     document.getElementsByTagName(
@@ -216,9 +216,9 @@ public class TiledMapLoader {
         }
     }
 
-    // =========================
-    // LOAD TSX
-    // =========================
+    
+    
+    
 
     private void loadTSX(File tsxFile, int firstgid) {
 
@@ -234,7 +234,7 @@ public class TiledMapLoader {
             if (tsxFile.exists()) {
                 document = builder.parse(tsxFile);
             } else {
-                // Fallback: look for the TSX file in local project directories if path doesn't exist
+                
                 String tsxName = tsxFile.getName();
                 File localTSX = new File("assets/tiles", tsxName);
                 if (!localTSX.exists()) {
@@ -272,7 +272,7 @@ public class TiledMapLoader {
                 String source =
                         imageElement.getAttribute("source");
 
-                // Dynamically resolve filename from the source attribute to assets/tiles/
+                
                 String fileName = new File(source).getName();
                 File imageFile = new File("assets/tiles", fileName);
 
@@ -393,7 +393,7 @@ public class TiledMapLoader {
             int height =
                     readIntAttribute(object, "height", 0);
 
-            // If designer uses rectangle objects, treat center as spawn anchor.
+            
             if (width > 0 || height > 0) {
                 x += width / 2;
                 y += height / 2;

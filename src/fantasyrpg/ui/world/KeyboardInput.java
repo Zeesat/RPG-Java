@@ -11,9 +11,9 @@ public class KeyboardInput implements KeyListener {
     public boolean rightPressed;
     private boolean interactPressed;
 
-    // Track the order of key presses to prioritize the latest input
-    public char lastHorizontal = ' '; // 'L' for Left, 'R' for Right
-    public char lastVertical = ' ';   // 'U' for Up, 'D' for Down
+    
+    public char lastHorizontal = ' '; 
+    public char lastVertical = ' ';   
 
     @Override
     public void keyTyped(KeyEvent e) {

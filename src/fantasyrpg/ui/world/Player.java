@@ -24,7 +24,7 @@ public class Player {
     int x = 100;
     int y = 100;
 
-    // Normal speed (was 3, reduced to 2 for a more natural walk pace)
+    
     int speed = 2;
 
     BufferedImage front;
@@ -36,7 +36,7 @@ public class Player {
 
     Rectangle solidArea;
 
-    // Walking animation / effects
+    
     private double bobCounter = 0;
     private final List<DustParticle> dustParticles = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class Player {
         }
     }
 
-    // Dynamic width based on current sprite's aspect ratio to avoid stretch/squish
+    
     public int getDrawWidth() {
         if (currentSprite == null) {
             return DRAW_SIZE;
@@ -111,7 +111,7 @@ public class Player {
         boolean moveLeft = false;
         boolean moveRight = false;
 
-        // Resolve horizontal conflict (SOCD cleaning / last input priority)
+        
         if (keyInput.leftPressed && keyInput.rightPressed) {
             if (keyInput.lastHorizontal == 'L') {
                 moveLeft = true;
@@ -127,7 +127,7 @@ public class Player {
             }
         }
 
-        // Resolve vertical conflict (SOCD cleaning / last input priority)
+        
         if (keyInput.upPressed && keyInput.downPressed) {
             if (keyInput.lastVertical == 'U') {
                 moveUp = true;
@@ -190,7 +190,7 @@ public class Player {
             );
         }
 
-        // Update animation counter and spawn dust particles
+        
         if (isMoving && !collision) {
             bobCounter += 0.22;
 
@@ -200,9 +200,9 @@ public class Player {
             int drawY = y;
 
             int feetX = drawX + drawW / 2;
-            int feetY = drawY + drawH - 14; // Shift Y upwards to match actual character feet position
+            int feetY = drawY + drawH - 14; 
 
-            // Spawn dust particles more frequently to match the player speed
+            
             if (Math.random() < 0.40) {
                 dustParticles.add(new DustParticle(feetX, feetY));
             }
@@ -210,7 +210,7 @@ public class Player {
             bobCounter = 0;
         }
 
-        // Update active dust particles
+        
         for (int i = dustParticles.size() - 1; i >= 0; i--) {
             DustParticle p = dustParticles.get(i);
             p.update();
@@ -224,33 +224,33 @@ public class Player {
         int drawW = getDrawWidth();
         int drawH = getDrawHeight();
 
-        // Center the sprite horizontally relative to its coordinate x to keep it stable
+        
         int drawX = x - (drawW - DRAW_SIZE) / 2;
         int drawY = y;
 
-        // 1. Draw Dust Particles (behind the player)
+        
         for (DustParticle p : dustParticles) {
             p.draw(g2);
         }
 
         boolean isMoving = keyInput.upPressed || keyInput.downPressed || keyInput.leftPressed || keyInput.rightPressed;
 
-        // 2. Draw Player Sprite (with bouncy walking bob/sway effect pivoting at feet)
+        
         if (isMoving) {
             Graphics2D g2d = (Graphics2D) g2.create();
-            // Translate origin to the feet of the player (drawX + half width, drawY + full height)
+            
             g2d.translate(drawX + drawW / 2, drawY + drawH);
 
-            // Rotate / Sway side-to-side pivoting from feet
+            
             double angle = Math.sin(bobCounter) * 0.08;
             g2d.rotate(angle);
 
-            // Squash & stretch pivoting from feet
+            
             double squash = 1.0 + Math.abs(Math.sin(bobCounter)) * 0.05;
             double stretch = 1.0 - Math.abs(Math.sin(bobCounter)) * 0.03;
             g2d.scale(stretch, squash);
 
-            // Draw image centered horizontally and sitting exactly on the pivot (ground)
+            
             g2d.drawImage(
                     currentSprite,
                     -drawW / 2,
@@ -261,7 +261,7 @@ public class Player {
             );
             g2d.dispose();
         } else {
-            // Draw normally when standing still
+            
             g2.drawImage(
                     currentSprite,
                     drawX,
@@ -303,7 +303,7 @@ public class Player {
         return getSolidTop() + SOLID_HEIGHT;
     }
 
-    // Dust Particle helper class
+    
     private static class DustParticle {
         double x, y;
         double vx, vy;
@@ -313,17 +313,17 @@ public class Player {
         public DustParticle(double x, double y) {
             this.x = x;
             this.y = y;
-            // Spread particles slightly
+            
             this.vx = (Math.random() - 0.5) * 1.0;
-            this.vy = -Math.random() * 0.5 - 0.2; // Float up slowly
-            this.size = Math.random() * 7 + 4; // Slightly larger particles
-            this.alpha = 0.85; // Much clearer opacity (was 0.5)
+            this.vy = -Math.random() * 0.5 - 0.2; 
+            this.size = Math.random() * 7 + 4; 
+            this.alpha = 0.85; 
         }
 
         public void update() {
             x += vx;
             y += vy;
-            alpha -= 0.018; // Fade out rate
+            alpha -= 0.018; 
             if (size > 1) {
                 size -= 0.08;
             }

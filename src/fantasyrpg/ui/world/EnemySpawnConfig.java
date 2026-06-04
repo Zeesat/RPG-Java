@@ -14,6 +14,9 @@ public final class EnemySpawnConfig {
 
     private static BufferedImage slimeIcon;
     private static BufferedImage golemIcon;
+    private static BufferedImage goblinIcon;
+    private static BufferedImage orcIcon;
+    private static BufferedImage dragonIcon;
 
     static {
         try {
@@ -26,8 +29,23 @@ public final class EnemySpawnConfig {
         } catch (Exception e) {
             System.err.println("Failed to load assets/icons/golem_icon.png: " + e.getMessage());
         }
+        try {
+            goblinIcon = ImageIO.read(new File("assets/icons/goblin_icon.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load assets/icons/goblin_icon.png: " + e.getMessage());
+        }
+        try {
+            orcIcon = ImageIO.read(new File("assets/icons/orcwarrior_icon.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load assets/icons/orcwarrior_icon.png: " + e.getMessage());
+        }
+        try {
+            dragonIcon = ImageIO.read(new File("assets/icons/dragonboss_icon.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load assets/icons/dragonboss_icon.png: " + e.getMessage());
+        }
 
-        // Central place to configure enemy placeholder markers by enemyId.
+        
         registerStyle("default", new MarkerStyle(
                 new Color(255, 89, 89),
                 new Color(255, 205, 205),
@@ -66,13 +84,26 @@ public final class EnemySpawnConfig {
     ) {
 
         String enemyId = normalizeEnemyId(spawnPoint.getEnemyId());
-        BufferedImage img = "golem".equals(enemyId) ? golemIcon : slimeIcon;
+        BufferedImage img = null;
+        if ("golem".equals(enemyId)) {
+            img = golemIcon;
+        } else if ("slime".equals(enemyId)) {
+            img = slimeIcon;
+        } else if ("goblin".equals(enemyId)) {
+            img = goblinIcon;
+        } else if ("orc_warrior".equals(enemyId)) {
+            img = orcIcon;
+        } else if ("dragonboss".equals(enemyId)) {
+            img = dragonIcon;
+        }
 
         if (img != null) {
             int x = spawnPoint.getX();
             int y = spawnPoint.getY();
             if ("golem".equals(enemyId)) {
                 g2.drawImage(img, x - 32, y - 32, 64, 64, null);
+            } else if ("dragonboss".equals(enemyId)) {
+                g2.drawImage(img, x - 48, y - 48, 96, 96, null);
             } else {
                 g2.drawImage(img, x - 24, y - 24, 48, 48, null);
             }
@@ -83,7 +114,7 @@ public final class EnemySpawnConfig {
             int x = spawnPoint.getX();
             int y = spawnPoint.getY();
 
-            // Current placeholder rendering (no asset yet): filled oval + ring.
+            
             g2.setColor(style.fillColor);
             g2.fillOval(
                     x - style.fillRadius,
@@ -123,11 +154,16 @@ public final class EnemySpawnConfig {
     }
 
     private static MarkerStyle resolveStyle(String enemyId) {
+        String norm = normalizeEnemyId(enemyId);
+        if (norm.contains("orc")) {
+            return MARKER_STYLES.get("orc");
+        }
+        if (norm.contains("dragon") || norm.contains("boss")) {
+            return MARKER_STYLES.get("boss");
+        }
 
         MarkerStyle style =
-                MARKER_STYLES.get(
-                        normalizeEnemyId(enemyId)
-                );
+                MARKER_STYLES.get(norm);
 
         if (style != null) {
             return style;
