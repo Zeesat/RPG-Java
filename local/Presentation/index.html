@@ -1,0 +1,28 @@
+  <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dungeon Battle: Rise of Hero | OOP Progress Presentation</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="deck" class="deck" aria-live="polite"></main>
+
+  <div class="hud" aria-hidden="false">
+    <button class="nav-btn" id="prevBtn" type="button" aria-label="Previous slide">Prev</button>
+    <div class="progress-shell" aria-label="Slide progress">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+    <span id="slideCounter" class="slide-counter">1 / 1</span>
+    <button class="nav-btn" id="nextBtn" type="button" aria-label="Next slide">Next</button>
+  </div>
+
+  <button id="fullscreenBtn" class="fullscreen-btn" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
+  <aside id="speakerNotes" class="speaker-notes" aria-live="polite"></aside>
+
+  <!-- Runtime data is separated from layout and kept in data/deck-data.js for file:// compatibility. -->
+  <script src="data/deck-data.js"></script>
+  <script src="slides.js"></script>
+</body>
+</html>

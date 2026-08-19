@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <defs>
+    <linearGradient id="panel" x1="180" y1="120" x2="1420" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F1F35"/>
+      <stop offset="1" stop-color="#091221"/>
+    </linearGradient>
+    <linearGradient id="highlight" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2AFADF"/>
+      <stop offset="1" stop-color="#4F8CFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <path d="M1 1L11 7L1 13" stroke="#8FD8FF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect x="50" y="48" width="1500" height="804" rx="38" fill="url(#panel)" stroke="rgba(255,255,255,0.12)"/>
+
+  <text x="120" y="120" fill="#2AFADF" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="6">CURRENT RUNTIME PATHS</text>
+  <text x="120" y="168" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="44" font-weight="700">Layered design exists, but the shipped flow is still split</text>
+
+  <rect x="110" y="230" width="610" height="480" rx="28" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)"/>
+  <text x="150" y="280" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700">Flow A: default application path</text>
+  <text x="150" y="318" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="22">Main -&gt; start screen -&gt; world exploration -&gt; battle prototype</text>
+
+  <rect x="150" y="362" width="190" height="82" rx="20" fill="#122640" stroke="#2AFADF" filter="url(#shadow)"/>
+  <text x="245" y="398" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Main</text>
+  <text x="245" y="424" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">entry point</text>
+
+  <rect x="400" y="362" width="230" height="82" rx="20" fill="#122640" stroke="#4F8CFF" filter="url(#shadow)"/>
+  <text x="515" y="398" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">StartingScreenFrame</text>
+  <text x="515" y="424" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">scene transition gate</text>
+
+  <rect x="150" y="506" width="220" height="96" rx="20" fill="#122640" stroke="#4F8CFF" filter="url(#shadow)"/>
+  <text x="260" y="546" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">WorldFrame</text>
+  <text x="260" y="574" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">Swing container</text>
+
+  <rect x="410" y="506" width="260" height="96" rx="20" fill="#122640" stroke="#FFD166" filter="url(#shadow)"/>
+  <text x="540" y="540" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">ui.world.GamePanel</text>
+  <text x="540" y="568" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">map loop, collision, prompts</text>
+
+  <rect x="255" y="634" width="310" height="96" rx="20" fill="#251B27" stroke="#FF9B71" filter="url(#shadow)"/>
+  <text x="410" y="668" text-anchor="middle" fill="#FFF0EA" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">ui.battle.GameFrame</text>
+  <text x="410" y="696" text-anchor="middle" fill="#F4B8A0" font-family="Segoe UI, Arial, sans-serif" font-size="18">prototype battle scene</text>
+
+  <path d="M340 403H400" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M515 444V506" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M370 554H410" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M540 602V634" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="870" y="230" width="610" height="480" rx="28" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)"/>
+  <text x="910" y="280" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700">Flow B: cleaner battle-domain path</text>
+  <text x="910" y="318" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="22">core.Game -&gt; BattleGUI -&gt; BattleService -&gt; entities + interfaces</text>
+
+  <rect x="930" y="362" width="190" height="82" rx="20" fill="#122640" stroke="#2AFADF" filter="url(#shadow)"/>
+  <text x="1025" y="398" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">core.Game</text>
+  <text x="1025" y="424" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">debug entry point</text>
+
+  <rect x="1180" y="362" width="210" height="82" rx="20" fill="#122640" stroke="#4F8CFF" filter="url(#shadow)"/>
+  <text x="1285" y="398" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">BattleGUI</text>
+  <text x="1285" y="424" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">battle presentation</text>
+
+  <rect x="930" y="506" width="220" height="96" rx="20" fill="#122640" stroke="#FFD166" filter="url(#shadow)"/>
+  <text x="1040" y="546" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">BattleService</text>
+  <text x="1040" y="574" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">turn orchestration</text>
+
+  <rect x="1190" y="506" width="230" height="96" rx="20" fill="#122640" stroke="#FFD166" filter="url(#shadow)"/>
+  <text x="1305" y="540" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">RandomEventService</text>
+  <text x="1305" y="568" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">round modifiers</text>
+
+  <rect x="930" y="634" width="490" height="96" rx="20" fill="#102331" stroke="url(#highlight)" filter="url(#shadow)"/>
+  <text x="1175" y="668" text-anchor="middle" fill="#EEF8FF" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Entities + Interfaces</text>
+  <text x="1175" y="696" text-anchor="middle" fill="#9FB6C8" font-family="Segoe UI, Arial, sans-serif" font-size="18">Character, Player, Enemy, SkillUser, Attackable</text>
+
+  <path d="M1120 403H1180" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1285 444V506" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1150 554H1190" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1040 602V634" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1305 602V634" stroke="#8FD8FF" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="280" y="760" width="1040" height="74" rx="20" fill="rgba(42,250,223,0.08)" stroke="rgba(42,250,223,0.32)"/>
+  <text x="800" y="806" text-anchor="middle" fill="#DFFFF9" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600">Key gap: the default world encounter still opens the prototype battle UI instead of instantiating a real domain enemy through EnemyFactory.</text>
+</svg>

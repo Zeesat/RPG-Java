@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "title": "Dungeon Battle: Rise of Hero",
+    "subtitle": "OOP Project Progress Presentation",
+    "course": "PPBO / Object-Oriented Programming",
+    "sourceRepository": "TurnBased Game / RPG-Java",
+    "generatedBy": "5"
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "type": "cover",
+      "eyebrow": "OOP Project Progress",
+      "title": "Dungeon Battle: Rise of Hero",
+      "subtitle": "Repository-grounded review of the current Java RPG architecture, implemented features, and OOP design decisions.",
+      "meta": [
+        "Java + Swing",
+        "Turn-based battle + world exploration"
+      ],
+      "background": "assets/images/backlit-keyboard-wikimedia.jpg",
+      "notes": "Presentation content is based on the current repository, documentation, and source code as of this progress review."
+    },
+    {
+      "id": "overview",
+      "type": "split",
+      "eyebrow": "Project Overview",
+      "title": "A Java RPG used as both a game prototype and an OOP case study",
+      "lead": "The project combines a start screen, tile-based world exploration, and turn-based combat while showcasing abstraction, inheritance, interfaces, and service-driven battle rules.",
+      "bullets": [
+        "Battle actors are modeled in a dedicated domain layer under entities and interfaces.",
+        "Swing-based world and battle screens provide visible progress beyond console-only exercises.",
+        "Technical documentation already maps architecture, runtime flow, UML, and OOP analysis."
+      ],
+      "stat": {
+        "value": "31",
+        "label": "Java source files in the current repo"
+      }
+    },
+    {
+      "id": "problem",
+      "type": "split",
+      "eyebrow": "Problem Statement",
+      "title": "The challenge is not only making the game run, but keeping the design extensible",
+      "lead": "A teaching project like this must show real gameplay progress while also demonstrating why OOP matters for maintainability, reuse, and future feature growth.",
+      "bullets": [
+        "Game actors need shared rules without duplicating health, damage, and defense logic.",
+        "Battle flow should remain reusable across UI layers instead of being rewritten per screen.",
+        "World exploration and battle encounters should eventually connect through a single domain model."
+      ],
+      "stat": {
+        "value": "2",
+        "label": "battle implementations currently coexist"
+      }
+    },
+    {
+      "id": "objectives",
+      "type": "methodology",
+      "eyebrow": "Objectives",
+      "title": "Current development goals visible in the codebase",
+      "steps": [
+        {
+          "title": "Model game actors",
+          "text": "Represent player and enemies with reusable classes, contracts, and subtype-specific behavior."
+        },
+        {
+          "title": "Separate rules from UI",
+          "text": "Keep turn resolution, rewards, and round modifiers in services instead of drawing code."
+        },
+        {
+          "title": "Provide runnable scenes",
+          "text": "Deliver a start screen, a world map, and battle scenes that can already be launched locally."
+        },
+        {
+          "title": "Preserve extension points",
+          "text": "Leave room for new enemies, stronger encounter integration, and cleaner architecture evolution."
+        }
+      ],
+      "formula": "UI -> Services -> Entities -> Interfaces"
+    },
+    {
+      "id": "progress",
+      "type": "cards",
+      "eyebrow": "Current Progress",
+      "title": "The repository already contains working systems, not just isolated class examples",
+      "lead": "Implementation progress is spread across gameplay scenes, battle domain code, UI prototypes, and supporting documentation.",
+      "cards": [
+        {
+          "label": "Runnable scenes",
+          "value": "4",
+          "caption": "start screen, world, prototype battle, domain battle"
+        },
+        {
+          "label": "Concrete enemies",
+          "value": "3",
+          "caption": "Goblin, Orc Warrior, DragonBoss"
+        },
+        {
+          "label": "Package areas",
+          "value": "10",
+          "caption": "core, entities, interfaces, services, ui, world, battle, and more"
+        },
+        {
+          "label": "Technical docs",
+          "value": "6",
+          "caption": "architecture, runtime, OOP, UML, report, class reference"
+        }
+      ],
+      "footer": "Most mature OOP implementation is concentrated in the battle domain and its services, while the scene integration layer is still evolving."
+    },
+    {
+      "id": "architecture",
+      "type": "diagram",
+      "eyebrow": "System Architecture",
+      "title": "Layer separation is good, but the main runtime path is still split",
+      "lead": "The repo already follows a mostly layered direction, yet the default application path still opens a separate battle prototype instead of the domain-backed battle flow.",
+      "bullets": [
+        "Domain layer: Character hierarchy, enemy subclasses, and behavioral interfaces.",
+        "Service layer: BattleService, RandomEventService, and EnemyFactory orchestration.",
+        "Presentation layer: start screen, world exploration, BattleGUI, and ui.battle prototype.",
+        "Main integration gap: world encounters do not yet create real domain Enemy objects."
+      ],
+      "image": "assets/diagrams/system-architecture.svg",
+      "alt": "Application architecture with two runtime paths",
+      "caption": "Based on docs/ARCHITECTURE.md and docs/RUNTIME_FLOW.md."
+    },
+    {
+      "id": "oop-design",
+      "type": "diagram",
+      "eyebrow": "OOP Design",
+      "title": "The battle domain shows clear abstraction and reusable class relationships",
+      "lead": "The strongest OOP story in the repository lives inside the battle model, where shared state is abstracted and specialized behavior is pushed to subclasses and interfaces.",
+      "bullets": [
+        "Character and Enemy are abstract because they represent concepts, not direct runtime instances.",
+        "Attackable captures universal combat behavior without forcing UI dependencies.",
+        "SkillUser is optional, so only Player, Goblin, and DragonBoss expose skill behavior.",
+        "Enemy subclasses override attack logic while preserving a common combat contract."
+      ],
+      "image": "assets/diagrams/oop-domain-uml.svg",
+      "alt": "UML-style class relationship diagram for the battle domain",
+      "caption": "Grounded in docs/UML_NOTES.md and the entities/interfaces packages."
+    },
+    {
+      "id": "structure",
+      "type": "code",
+      "eyebrow": "Code Structure",
+      "title": "Packages are already organized by responsibility",
+      "lead": "The repository is not a single monolithic file. It separates domain rules, orchestration, scene code, and utilities in a way that is useful for both learning and future refactoring.",
+      "bullets": [
+        "entities and interfaces define the combat model.",
+        "services coordinate battle flow and runtime variation.",
+        "ui.world and ui.battle show that presentation concerns are already split into scenes."
+      ],
+      "language": "package tree",
+      "caption": "Reduced tree focused on presentation-relevant modules.",
+      "code": "src/fantasyrpg\n|- Main.java\n|- core/Game.java\n|- entities/\n|  |- Character.java\n|  |- Player.java\n|  |- Enemy.java\n|  |- Goblin.java\n|  |- OrcWarrior.java\n|  \\- DragonBoss.java\n|- interfaces/\n|  |- Attackable.java\n|  \\- SkillUser.java\n|- services/\n|  |- BattleService.java\n|  |- RandomEventService.java\n|  \\- EnemyFactory.java\n|- ui/BattleGUI.java\n|- ui/start/StartingScreenFrame.java\n|- ui/world/...\n\\- ui/battle/..."
+    },
+    {
+      "id": "character-code",
+      "type": "code",
+      "eyebrow": "Key Implementation Example",
+      "title": "Character centralizes state protection and attack variants",
+      "lead": "Encapsulation is strongest in the battle domain. HP clamping, defense state, and overloaded attack behavior are handled inside the shared abstraction rather than scattered across subclasses.",
+      "bullets": [
+        "private fields guard internal combat state.",
+        "setHp(...) prevents invalid values automatically.",
+        "attack(...) overloads support extension without renaming the core action."
+      ],
+      "language": "Character.java",
+      "caption": "Condensed from src/fantasyrpg/entities/Character.java.",
+      "code": "public abstract class Character implements Attackable {\n    private final String name;\n    private final int maxHp;\n    private int hp;\n    private double defenseMultiplier;\n    private boolean defending = false;\n\n    public void setHp(int hp) {\n        this.hp = Math.max(0, Math.min(maxHp, hp));\n    }\n\n    public void defend() {\n        defending = true;\n        defenseMultiplier = Math.max(defenseMultiplier, 1.5);\n    }\n\n    public abstract int attack(Character target);\n\n    public int attack(Character target, String skillName) {\n        int baseDamage = attack(target);\n        if (\"critical\".equalsIgnoreCase(skillName)) {\n            int bonusDamage = Math.max(2, baseDamage / 2);\n            target.receiveDamage(bonusDamage);\n            return baseDamage + bonusDamage;\n        }\n        return baseDamage;\n    }\n}"
+    },
+    {
+      "id": "battle-service-code",
+      "type": "code",
+      "eyebrow": "Key Implementation Example",
+      "title": "BattleService applies polymorphism through shared contracts",
+      "lead": "The service does not need a special branch for every enemy class. It relies on the Enemy parent type and the optional SkillUser contract to decide how the turn resolves.",
+      "bullets": [
+        "UI can pass actions at a high level without owning damage formulas.",
+        "instanceof SkillUser enables optional behavior only when the object supports it.",
+        "The returned ActionResult keeps battle logic decoupled from rendering."
+      ],
+      "language": "BattleService.java",
+      "caption": "Condensed from src/fantasyrpg/services/BattleService.java.",
+      "code": "public ActionResult executeEnemyTurn(Player player, Enemy enemy) {\n    int damage;\n\n    if (enemy instanceof SkillUser skillUser &&\n            enemy.getHp() <= enemy.getMaxHp() / 2) {\n\n        damage = skillUser.useSkill(player);\n        return new ActionResult(\n                enemy.getName() + \" uses special attack! -\" + damage + \" HP\",\n                damage\n        );\n    }\n\n    damage = enemy.attack(player);\n    return new ActionResult(\n            enemy.getName() + \" attacks! -\" + damage + \" HP\",\n            damage\n    );\n}"
+    },
+    {
+      "id": "oop-usage",
+      "type": "findings",
+      "eyebrow": "OOP Usage",
+      "title": "Where the main OOP concepts appear in the running project",
+      "findings": [
+        "Encapsulation: Character protects HP, defense, and turn modifiers through private fields and controlled methods.",
+        "Inheritance: Player and Enemy extend Character, and Enemy is specialized into Goblin, OrcWarrior, and DragonBoss.",
+        "Polymorphism: BattleService calls enemy.attack(player) and lets the concrete subclass decide the formula.",
+        "Abstraction + Interface: Character and Enemy are abstract; SkillUser adds optional skill capability without forcing every class to implement it.",
+        "Overloading + Composition: Character overloads attack(...), while BattleGUI composes BattleService and RandomEventService."
+      ]
+    },
+    {
+      "id": "challenges",
+      "type": "findings",
+      "eyebrow": "Technical Challenges",
+      "title": "The main issues are architectural consistency, not lack of code",
+      "findings": [
+        "The default runtime path enters ui.battle.GameFrame, while the cleaner OOP battle flow lives in ui.BattleGUI.",
+        "EnemyFactory exists but is not yet the real bridge from world encounters to instantiated domain enemies.",
+        "There are two Player classes in different packages, which is valid but easy to confuse during onboarding.",
+        "Asset loading mixes direct filesystem access and classpath resource patterns, complicating packaging later.",
+        "World-side classes expose mutable state more openly than the domain layer, so encapsulation quality is uneven."
+      ]
+    },
+    {
+      "id": "future",
+      "type": "methodology",
+      "eyebrow": "Future Development",
+      "title": "Next milestones are about consolidation and stronger integration",
+      "steps": [
+        {
+          "title": "Unify battle rules",
+          "text": "Move toward BattleService as the single source of truth for combat resolution."
+        },
+        {
+          "title": "Connect world encounters",
+          "text": "Use EnemyFactory and encounter metadata so the world scene creates real domain enemies."
+        },
+        {
+          "title": "Tighten encapsulation",
+          "text": "Refactor world-state classes so positions and collision data are exposed more safely."
+        },
+        {
+          "title": "Reduce technical debt",
+          "text": "Simplify entry points, standardize asset loading, and add test coverage around services."
+        }
+      ],
+      "formula": "world encounter -> EnemyFactory -> BattleService -> one battle pipeline"
+    },
+    {
+      "id": "demo",
+      "type": "showcase",
+      "eyebrow": "Demo / Results",
+      "title": "Visible implementation evidence already exists in the repository",
+      "lead": "These screenshots come from the project assets and current local presentation workspace, showing both gameplay progress and the split between the prototype and domain-backed battle flows.",
+      "items": [
+        {
+          "src": "assets/images/world_image.png",
+          "title": "World exploration scene",
+          "caption": "TMX map rendering, camera movement, collision handling, and battle-trigger placeholders."
+        },
+        {
+          "src": "assets/images/battle_image_in_battle_currently_using.png",
+          "title": "Current main battle scene",
+          "caption": "Prototype battle UI launched from the world path with action buttons, effects, and HP tracking."
+        },
+        {
+          "src": "assets/images/battle_image_in_battlegui_version2_not_currently_using.png",
+          "title": "Domain-backed BattleGUI",
+          "caption": "Alternative battle scene that already uses entities and BattleService more directly."
+        }
+      ]
+    },
+    {
+      "id": "conclusion",
+      "type": "conclusion",
+      "eyebrow": "Conclusion",
+      "title": "The project already demonstrates meaningful OOP progress",
+      "verdict": "The strongest achievement so far is a believable battle domain with real abstraction, subtype behavior, and service-based orchestration. The next step is to unify the runtime around that stronger core.",
+      "tradeoffs": [
+        "The battle domain is the clearest academic OOP success in the repository.",
+        "Playable scenes and documentation make the progress presentation concrete and defensible.",
+        "The biggest engineering task ahead is consolidation, not starting from zero."
+      ],
+      "winner": {
+        "label": "Recommended next focus",
+        "model": "Unify the battle pipeline",
+        "score": "Route world encounters into EnemyFactory",
+        "rmse": "Make BattleService the only combat source of truth"
+      }
+    },
+    {
+      "id": "thanks",
+      "type": "thanks",
+      "title": "Thank You",
+      "subtitle": "Questions, feedback, and architecture discussion",
+      "meta": [
+        "Dungeon Battle: Rise of Hero",
+        "OOP Project Progress",
+        "Repository-based presentation"
+      ]
+    }
+  ]
+}

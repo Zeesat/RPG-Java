@@ -2,24 +2,20 @@ package fantasyrpg.entities;
 
 import fantasyrpg.interfaces.SkillUser;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 public class DragonBoss extends Enemy implements SkillUser {
 
     public DragonBoss() {
-        super("Azhrax the Ash Dragon", 250, 22, 9, 180, 1200);
+        super("Azhrax the Ash Dragon", 250, 22, 9, 180, 1200, 12);
     }
+
+    @Override
+    public int getSkillThreshold() { return 50; }
+
+    @Override
+    public String getAttackName() { return "Claw Strike"; }
+
+    @Override
+    public String getSkillName() { return "Dragon Breath"; }
 
     @Override
     public int attack(Character target) {
@@ -27,9 +23,6 @@ public class DragonBoss extends Enemy implements SkillUser {
         target.receiveDamage(damage);
         return damage;
     }
-
-    
-
 
     @Override
     public int useSkill(Character target) {
